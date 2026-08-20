@@ -12,13 +12,14 @@ export function ComparePage() {
   return <div className="page-container compare-page"><div className="page-heading"><div><p className="eyebrow">Comparador</p><h1>{selectedIds.length} alternativas lado a lado</h1><p>Desliza horizontalmente en móvil para revisar todas las columnas.</p></div><button className="text-button" type="button" onClick={clear}>Limpiar selección</button></div>
     {loading && <p className="notice">Preparando comparación…</p>}{error && <p className="notice error">{error}</p>}
     {!loading && !error && <div className="comparison-scroll"><table className="comparison-table"><thead><tr><th scope="col">Detalle</th>{plans.map((plan) => <th scope="col" key={plan.id}><span>{plan.name}</span><button type="button" onClick={() => toggle(plan.id)} aria-label={`Quitar ${plan.name}`}>Quitar</button></th>)}</tr></thead><tbody>
-      <Row label="Precio total" plans={plans} render={(plan) => formatMoney(plan.totalPrice)} strong />
-      <Row label="Por persona" plans={plans} render={(plan) => formatMoney(getPricePerPerson(plan))} />
+      <Row label="Precio total" plans={plans} render={(plan) => plan.totalPrice ? formatMoney(plan.totalPrice) : 'Pendiente de publicación'} strong />
+      <Row label="Por persona" plans={plans} render={(plan) => { const price = getPricePerPerson(plan); return price ? formatMoney(price) : 'Pendiente' }} />
       <Row label="Alojamiento" plans={plans} render={(plan) => plan.accommodation} />
       <Row label="Transporte" plans={plans} render={(plan) => plan.transport} />
       <Row label="Festival / entrada" plans={plans} render={(plan) => plan.festivalPass} />
       <Row label="DreamVille" plans={plans} render={(plan) => plan.dreamVilleIncluded ? 'Incluido, equipamiento provisto' : 'No incluido'} />
       <Row label="Inclusiones" plans={plans} render={(plan) => <ul>{plan.inclusions.map((item) => <li key={item}>{item}</li>)}</ul>} />
+      <Row label="No incluido" plans={plans} render={(plan) => plan.notIncluded.length ? <ul>{plan.notIncluded.map((item) => <li key={item}>{item}</li>)}</ul> : 'Sin exclusiones informadas'} />
       <Row label="Tipo de precio" plans={plans} render={(plan) => <PriceBadge type={plan.priceType} />} />
       <Row label="Disponibilidad" plans={plans} render={(plan) => statusLabels[plan.status]} />
     </tbody></table></div>}

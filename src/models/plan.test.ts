@@ -14,6 +14,11 @@ describe('reglas de TravelPlan', () => {
   })
   it('calcula el precio por persona con un único modelo', () => {
     const duo = demoPlans.find((plan) => plan.travelerCount === 2)!
-    expect(getPricePerPerson(duo).amount).toBe(duo.totalPrice.amount / 2)
+    expect(getPricePerPerson(duo)?.amount).toBe((duo.totalPrice?.amount ?? 0) / 2)
+  })
+  it('acepta precio pendiente sin tipo y rechaza combinaciones inconsistentes', () => {
+    const pending: TravelPlan = { ...demoPlans[0], id: 'pending', totalPrice: null, priceType: null }
+    expect(validatePlan(pending)).toEqual([])
+    expect(validatePlan({ ...pending, priceType: 'OFFICIAL' })).toContain('Un precio pendiente no puede indicar un tipo de precio.')
   })
 })

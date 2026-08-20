@@ -45,6 +45,24 @@ VITE_DATA_SOURCE=demo npm run dev
 
 La colección esperada es `plans`; cada documento utiliza el modelo `TravelPlan` definido en `src/models/plan.ts`. Las reglas incluidas permiten lectura pública de esa colección y bloquean todas las escrituras del cliente. Una colección vacía muestra un estado informativo y nunca provoca que los datos demo se publiquen automáticamente.
 
+## Dataset de producción
+
+Los planes trazables están definidos en `scripts/productionPlans.ts`. El seed usa IDs estables, valida todo el dataset antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas.
+
+Valida el dataset sin acceder a Firestore:
+
+```bash
+npm run seed:firestore
+```
+
+Para escribir y verificar la colección se requieren credenciales administrativas fuera del repositorio mediante Application Default Credentials:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/ruta/segura/service-account.json npm run seed:firestore:write
+```
+
+Nunca copies la clave dentro del proyecto. El script apunta explícitamente a `web-pack-tomorrowland` y falla si la colección final contiene IDs distintos del dataset esperado.
+
 ## Estructura
 
 ```text

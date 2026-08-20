@@ -1,7 +1,8 @@
 import { assertValidPlan, type TravelPlan } from '../models/plan'
 const date = '2026-08-20'
 const source = { label: 'Estimación demo para planificación', type: 'ESTIMATE' as const, verifiedAt: date, updatedAt: date }
-const common = { priceType: 'ESTIMATED' as const, status: 'COMING_SOON' as const, source, updatedAt: date }
+const event = { startsOn: '2027-04-30', endsOn: '2027-05-02', venue: 'Parque Maeda', location: 'Itu, São Paulo, Brasil' }
+const common = { priceType: 'ESTIMATED' as const, status: 'COMING_SOON' as const, sources: [source], updatedAt: date, notIncluded: [], event }
 const rawPlans: TravelPlan[] = [
   { ...common, id: 'solo-gj-hotel', name: 'Global Journey Hotel', travelerCount: 1, category: 'GLOBAL_JOURNEY', accommodation: 'Hotel 3 noches', transport: 'Vuelo ida y vuelta desde Santiago', festivalPass: 'Full Madness Pass', dreamVilleIncluded: false, camping: { required: false, equipmentProvided: true, provider: 'NOT_APPLICABLE' }, totalPrice: { amount: 2450000, currency: 'CLP' }, inclusions: ['Entrada de 3 días', 'Traslados locales', 'Hotel con desayuno'] },
   { ...common, id: 'solo-gj-dreamville', name: 'Global Journey DreamVille', travelerCount: 1, category: 'GLOBAL_JOURNEY', accommodation: 'Easy Tent con equipamiento incluido', transport: 'Vuelo ida y vuelta desde Santiago', festivalPass: 'Full Madness Pass', dreamVilleIncluded: true, camping: { required: true, equipmentProvided: true, provider: 'TOMORROWLAND' }, totalPrice: { amount: 2780000, currency: 'CLP' }, inclusions: ['Entrada de 3 días', 'Easy Tent equipado', 'Traslados oficiales'] },
