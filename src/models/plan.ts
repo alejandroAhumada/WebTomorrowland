@@ -7,15 +7,18 @@ export interface Money { amount: number; currency: Currency }
 export interface PlanSource { label: string; type: SourceType; url?: string; verifiedAt: string; updatedAt: string }
 export interface CampingProvision { required: boolean; equipmentProvided: boolean; provider: 'TOMORROWLAND' | 'PACKAGE' | 'NOT_APPLICABLE' }
 export interface EventDetails { startsOn: string; endsOn: string; venue: string; location: string }
-export interface TravelPlan { id: string; name: string; travelerCount: 1 | 2; event: EventDetails; category: PlanCategory; accommodation: string; transport: string; festivalPass: string; dreamVilleIncluded: boolean; camping: CampingProvision; totalPrice: Money | null; priceType: PriceType | null; inclusions: string[]; notIncluded: string[]; status: PlanStatus; sources: PlanSource[]; updatedAt: string }
+export interface TravelPlan { id: string; name: string; travelerCount: 1 | 2; event: EventDetails; category: PlanCategory; accommodation: string; transport: string; festivalPass: string; dreamVilleIncluded: boolean; camping: CampingProvision; totalPrice: Money | null; priceType: PriceType | null; inclusions: string[]; notIncluded: string[]; status: PlanStatus; sources: PlanSource[]; sourceObservedAt?: string; updatedAt: string }
 export function getPricePerPerson(plan: TravelPlan): Money | null { return plan.totalPrice ? { amount: plan.totalPrice.amount / plan.travelerCount, currency: plan.totalPrice.currency } : null }
 export function validatePlan(plan: TravelPlan): string[] {
   const errors: string[] = []
-  if (plan.totalPrice && plan.totalPrice.amount <= 0) errors.push('El precio total debe ser mayor que cero.')
+  if (![1, 2].includes(plan.travelerCount)) errors.push('La cantidad de viajeros debe ser 1 o 2.')
+  if (plan.totalPrice && (!Number.isFinite(plan.totalPrice.amount) || plan.totalPrice.amount <= 0)) errors.push('El precio total debe ser mayor que cero.')
+  if (plan.totalPrice && !['CLP', 'BRL', 'USD', 'EUR'].includes(plan.totalPrice.currency)) errors.push('La moneda del precio no es válida.')
   if (plan.totalPrice && !plan.priceType) errors.push('Un precio conocido debe indicar si es oficial o estimado.')
   if (!plan.totalPrice && plan.priceType) errors.push('Un precio pendiente no puede indicar un tipo de precio.')
   if (plan.inclusions.length === 0) errors.push('El plan debe declarar al menos una inclusión.')
   if (!plan.event.startsOn || !plan.event.endsOn || !plan.event.venue || !plan.event.location) errors.push('El plan debe identificar el evento.')
+  if (plan.sourceObservedAt && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(plan.sourceObservedAt)) errors.push('La fecha de observación de la fuente no es válida.')
   if (plan.priceType === 'OFFICIAL' && !plan.sources.some((source) => source.type === 'OFFICIAL')) errors.push('Un precio oficial requiere una fuente oficial.')
   if (plan.camping.required && !plan.camping.equipmentProvided) errors.push('No se permiten planes que requieran llevar equipamiento de camping propio.')
   if (plan.camping.required && plan.camping.provider === 'NOT_APPLICABLE') errors.push('Un plan con camping debe indicar quién proporciona el equipamiento.')

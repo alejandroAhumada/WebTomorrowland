@@ -1,5 +1,6 @@
 node_modules/
 dist/
+lib/
 coverage/
 .env*
 !.env.example
@@ -10,6 +11,7 @@ firebase-debug.log*
 firebase-tools.log*
 ui-debug.log*
 .runtimeconfig.json
+gha-creds-*.json
 *service-account*.json
 *serviceAccount*.json
 *credentials*.json

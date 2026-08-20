@@ -63,6 +63,55 @@ La cuenta de Firestore no necesita permisos de Hosting ni administración IAM. N
 
 `observedAt` es la fecha publicada por BCCh. `fetchedAt` identifica cuándo se obtuvo la observación actualmente almacenada y `updatedAt` cuándo se escribió ese estado; ambos cambian solamente en `UPDATED` o `CORRECTION`. Las ejecuciones sin cambios se trazan en `syncRuns`. Verifica la última ejecución en GitHub Actions y, administrativamente, en las colecciones `syncRuns` y `exchangeRates` de Firestore.
 
+## Tomorrowland Plan Sync API
+
+La barrera de escritura para la futura automatización de contenido es una función HTTP de Firebase Functions 2nd gen llamada `syncTomorrowlandPlan`, separada del frontend y del sincronizador BCCh. No busca información ni llama a IA: recibe una propuesta, valida schema y dominio, compara el plan actual y ejecuta una transacción Firestore.
+
+El endpoint acepta exclusivamente `POST` con `Content-Type: application/json` y una propuesta individual:
+
+```json
+{
+  "proposalId": "research-2026-09-03-easy-tent-001",
+  "planId": "easy-tent-2p-2027",
+  "observedAt": "2026-09-03T12:00:00.000Z",
+  "source": {
+    "url": "https://brasil.tomorrowland.com/en/tickets/",
+    "type": "OFFICIAL",
+    "publisher": "Tomorrowland"
+  },
+  "changes": {
+    "price": {
+      "totalPrice": { "amount": 7609, "currency": "BRL" },
+      "priceType": "OFFICIAL"
+    }
+  }
+}
+```
+
+Los únicos cambios permitidos son `price` (precio total y tipo como una unidad), `inclusions`, `notIncluded` y `status`. ID, cantidad de viajeros, categoría, alojamiento, transporte, entrada y camping permanecen inmutables. Solo se admiten URLs HTTPS de `tomorrowland.com`, `www.tomorrowland.com` y `brasil.tomorrowland.com`, comparando el hostname exacto.
+
+La API permite `PENDING → OFFICIAL`, `ESTIMATED → OFFICIAL` y correcciones `OFFICIAL → OFFICIAL`. Rechaza degradaciones `OFFICIAL → ESTIMATED/PENDING`, propuestas antiguas, timestamps futuros, planes inexistentes, IDs reutilizados con otro payload y cualquier candidato que no supere `TravelPlan`. `observedAt` pertenece a la fuente; `receivedAt`, `completedAt` y el `updatedAt` aplicado provienen del servidor.
+
+Usa `?dryRun=true` para ejecutar las mismas lecturas y validaciones sin escribir plan, auditoría, historial ni marcador de idempotencia. Los resultados son `UPDATED`, `NO_CHANGE`, `REJECTED` y `ALREADY_PROCESSED`. Una ejecución real crea `planSyncProposals/{proposalId}`, `syncRuns/tomorrowland_{proposalId}` y actualiza `planSyncState/{planId}` para impedir regresiones incluso después de un `NO_CHANGE`; un cambio aplicado también crea `plans/{planId}/history/{proposalId}` con solo los campos anteriores y nuevos afectados. Estas colecciones administrativas y el historial no son públicos. Un fallo interno intenta registrar `FAILED` sin exponer detalles sensibles; si Firestore también falla, el error queda en Cloud Logging.
+
+La autenticación es IAM, no un token de aplicación. La función se ejecuta como `tomorrowland-sync-api@web-pack-tomorrowland.iam.gserviceaccount.com` y solo admite invocaciones de `tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com`. El cliente debe enviar un ID token de Google con la URL desplegada como audiencia. No existe autenticación en el JSON de negocio.
+
+Para preparar producción se requieren tres identidades separadas:
+
+- Runtime `tomorrowland-sync-api`: `roles/datastore.user` en el proyecto.
+- Caller `tomorrowland-sync-client`: `roles/run.invoker` únicamente sobre la función/servicio desplegado; la configuración `invoker` del código aplica esta relación.
+- Deploy `tomorrowland-sync-deploy`: `roles/cloudfunctions.developer` en el proyecto y `roles/iam.serviceAccountUser` sobre la identidad runtime y la cuenta de Cloud Build correspondiente. Guarda su JSON completo únicamente en el GitHub Secret `FIREBASE_SERVICE_ACCOUNT_FUNCTIONS_DEPLOY`.
+
+El proyecto debe estar en el plan Blaze para habilitar Cloud Functions, Cloud Build y Artifact Registry. La API no puede desplegarse mientras permanezca en Spark.
+
+El workflow manual **Deploy Tomorrowland Sync API** valida todo antes de autenticarse y despliega exclusivamente el codebase `tomorrowland-sync`. No forma parte de cada cambio visual. Para compilar localmente:
+
+```bash
+npm run build:functions
+```
+
+El emulador puede iniciarse con Firebase CLI mediante `firebase emulators:start --only functions,firestore --project demo-webtomorrowland`; necesita planes de prueba en el emulador para ejercer el endpoint. IAM se valida en producción, no en el emulador.
+
 Valida el dataset sin acceder a Firestore:
 
 ```bash
@@ -88,6 +137,8 @@ src/
 ├── pages/       Home, planes y comparación
 ├── state/       Selección para comparar
 └── utils/       Formato y etiquetas
+functions/
+└── src/         Sync API, reglas de propuestas y adaptador administrativo Firestore
 ```
 
 `firebase.json` configura Firebase Hosting como SPA y `firestore.rules` mantiene el acceso público en modo lectura. Los datos demo están en `src/data/demoPlans.ts`.
