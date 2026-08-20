@@ -1,5 +1,7 @@
 import type { PlanRepository } from './PlanRepository'
+import type { ExchangeRateRepository } from './ExchangeRateRepository'
 import { LocalPlanRepository } from './LocalPlanRepository'
+import { LocalExchangeRateRepository } from './LocalExchangeRateRepository'
 
 class ConfiguredPlanRepository implements PlanRepository {
   private delegate?: Promise<PlanRepository>
@@ -19,3 +21,31 @@ class ConfiguredPlanRepository implements PlanRepository {
 }
 
 export const planRepository: PlanRepository = new ConfiguredPlanRepository()
+
+class ConfiguredExchangeRateRepository implements ExchangeRateRepository {
+  private delegate?: Promise<ExchangeRateRepository>
+  private requests = new Map<string, ReturnType<ExchangeRateRepository['get']>>()
+
+  private getDelegate(): Promise<ExchangeRateRepository> {
+    if (!this.delegate) {
+      this.delegate = import.meta.env.VITE_DATA_SOURCE === 'firestore'
+        ? import('./FirestoreExchangeRateRepository').then(({ FirestoreExchangeRateRepository }) => new FirestoreExchangeRateRepository())
+        : Promise.resolve(new LocalExchangeRateRepository())
+    }
+    return this.delegate
+  }
+
+  get(fromCurrency: Parameters<ExchangeRateRepository['get']>[0], toCurrency: Parameters<ExchangeRateRepository['get']>[1]) {
+    const key = `${fromCurrency}_${toCurrency}`
+    const cached = this.requests.get(key)
+    if (cached) return cached
+    const request = this.getDelegate().then((repository) => repository.get(fromCurrency, toCurrency)).catch((error) => {
+      this.requests.delete(key)
+      throw error
+    })
+    this.requests.set(key, request)
+    return request
+  }
+}
+
+export const exchangeRateRepository: ExchangeRateRepository = new ConfiguredExchangeRateRepository()

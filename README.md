@@ -43,11 +43,11 @@ Para trabajar con los datos demo sin consultar Firebase, usa `VITE_DATA_SOURCE=d
 VITE_DATA_SOURCE=demo npm run dev
 ```
 
-La colección esperada es `plans`; cada documento utiliza el modelo `TravelPlan` definido en `src/models/plan.ts`. Las reglas incluidas permiten lectura pública de esa colección y bloquean todas las escrituras del cliente. Una colección vacía muestra un estado informativo y nunca provoca que los datos demo se publiquen automáticamente.
+Las colecciones esperadas son `plans` y `exchangeRates`. Cada plan utiliza `TravelPlan`; las tasas se identifican por pares estables como `BRL_CLP`. Las reglas incluidas permiten lectura pública y bloquean todas las escrituras del cliente. Si una tasa no está disponible, la aplicación conserva el precio original y omite la conversión sin bloquear los planes.
 
 ## Dataset de producción
 
-Los planes trazables están definidos en `scripts/productionPlans.ts`. El seed usa IDs estables, valida todo el dataset antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas.
+Los planes trazables están definidos en `scripts/productionPlans.ts` y las tasas en `scripts/productionExchangeRates.ts`. El seed usa IDs estables, valida los datos antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas. La referencia BRL→CLP proviene del cierre PTAX del Banco Central do Brasil; la moneda original de cada plan no se modifica.
 
 Valida el dataset sin acceder a Firestore:
 

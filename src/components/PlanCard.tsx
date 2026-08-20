@@ -2,6 +2,7 @@ import type { TravelPlan } from '../models/plan'
 import { getPricePerPerson } from '../models/plan'
 import { categoryLabels, formatMoney, statusLabels } from '../utils/format'
 import { PriceBadge } from './PriceBadge'
+import { ClpConversion } from './ClpConversion'
 
 interface PlanCardProps { plan: TravelPlan; selected: boolean; disabled: boolean; onToggle: () => void }
 
@@ -11,7 +12,7 @@ export function PlanCard({ plan, selected, disabled, onToggle }: PlanCardProps) 
     <div className="card-topline"><span className="category">{categoryLabels[plan.category]}</span><PriceBadge type={plan.priceType} /></div>
     <h2>{plan.name}</h2>
     <p className="status"><span />{statusLabels[plan.status]}</p>
-    <div className="price-block">{plan.totalPrice && pricePerPerson ? <><strong>{formatMoney(plan.totalPrice)}</strong><span>total · {plan.totalPrice.currency}</span><p>{formatMoney(pricePerPerson)} por persona</p></> : <><strong>Precio pendiente</strong><span>Aún no publicado</span><p>Se actualizará desde la fuente oficial</p></>}</div>
+    <div className="price-block">{plan.totalPrice && pricePerPerson ? <><strong>{formatMoney(plan.totalPrice)}</strong><span>total · {plan.totalPrice.currency}</span><ClpConversion money={plan.totalPrice} /><p>{formatMoney(pricePerPerson)} por persona</p></> : <><strong>Precio pendiente</strong><span>Aún no publicado</span><p>Se actualizará desde la fuente oficial</p></>}</div>
     <dl className="plan-details"><div><dt>Alojamiento</dt><dd>{plan.accommodation}</dd></div><div><dt>Transporte</dt><dd>{plan.transport}</dd></div></dl>
     <ul className="inclusions">{plan.inclusions.map((item) => <li key={item}>{item}</li>)}</ul>
     {plan.notIncluded.length > 0 && <div className="not-included"><strong>No incluido</strong><ul>{plan.notIncluded.map((item) => <li key={item}>{item}</li>)}</ul></div>}

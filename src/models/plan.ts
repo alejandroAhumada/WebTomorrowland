@@ -2,7 +2,8 @@ export type PriceType = 'ESTIMATED' | 'OFFICIAL'
 export type PlanStatus = 'AVAILABLE' | 'COMING_SOON' | 'UNAVAILABLE'
 export type PlanCategory = 'GLOBAL_JOURNEY' | 'SEPARATE_PURCHASE'
 export type SourceType = 'OFFICIAL' | 'TRAVEL_PROVIDER' | 'ESTIMATE'
-export interface Money { amount: number; currency: 'CLP' | 'BRL' | 'USD' | 'EUR' }
+export type Currency = 'CLP' | 'BRL' | 'USD' | 'EUR'
+export interface Money { amount: number; currency: Currency }
 export interface PlanSource { label: string; type: SourceType; url?: string; verifiedAt: string; updatedAt: string }
 export interface CampingProvision { required: boolean; equipmentProvided: boolean; provider: 'TOMORROWLAND' | 'PACKAGE' | 'NOT_APPLICABLE' }
 export interface EventDetails { startsOn: string; endsOn: string; venue: string; location: string }
