@@ -24,7 +24,7 @@ describe('BCCh BDE', () => {
   })
   it('expone un diagnóstico limitado a campos públicos', () => {
     expect(extractBcchPublicDiagnostics(response([{ date: '20-08-2026', value: '178.01' }]))).toEqual([
-      { series: BCCH_SERIES, dateField: 'indexDateString', rawDate: '20-08-2026', rawValue: '178.01' },
+      { series: BCCH_SERIES, dateField: 'indexDateString', rawDate: '20-08-2026', rawValue: '178.01', statusCode: 'OK' },
     ])
   })
   it('normaliza cambio de mes, año, bisiesto y fecha con hora conocida', () => {

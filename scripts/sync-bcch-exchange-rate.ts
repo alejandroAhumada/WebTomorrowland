@@ -25,7 +25,7 @@ try {
   if (!response.ok) throw new Error(`La API BCCh respondió HTTP ${response.status}.`)
   const responseXml = await response.text()
   if (process.env.BCCH_DIAGNOSTIC === 'true') {
-    const diagnostics = extractBcchPublicDiagnostics(responseXml).slice(-3)
+    const diagnostics = extractBcchPublicDiagnostics(responseXml).slice(-20)
     console.log(`BCCh public response shape: ${JSON.stringify(diagnostics)}`)
   }
   const fetched = selectLatestObservation(parseBcchSoapResponse(responseXml), new Date())

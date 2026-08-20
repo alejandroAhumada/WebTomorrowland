@@ -8,7 +8,7 @@ export const EXCHANGE_RATE_ID = 'BRL_CLP'
 export const MAX_OBSERVATION_AGE_DAYS = 14
 
 export interface BcchObservation { series: string; observedAt: string; rate: number }
-export interface BcchPublicDiagnostic { series: string; dateField: 'indexDateString'; rawDate: string; rawValue: string }
+export interface BcchPublicDiagnostic { series: string; dateField: 'indexDateString'; rawDate: string; rawValue: string; statusCode: string }
 export type SyncResult = 'UPDATED' | 'NO_CHANGE' | 'CORRECTION' | 'STALE_SOURCE'
 
 export interface SyncDecision {
@@ -79,6 +79,7 @@ export function extractBcchPublicDiagnostics(xml: string): BcchPublicDiagnostic[
       dateField: 'indexDateString' as const,
       rawDate: readTag(block, 'indexDateString'),
       rawValue: readTag(block, 'value'),
+      statusCode: readTag(block, 'statusCode'),
     }))
   })
 }
