@@ -49,7 +49,19 @@ Las colecciones esperadas son `plans` y `exchangeRates`. Cada plan utiliza `Trav
 
 Los planes trazables están definidos en `scripts/productionPlans.ts` y las tasas en `scripts/productionExchangeRates.ts`. El seed usa IDs estables, valida los datos antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas. La referencia BRL→CLP usa directamente la serie diaria `F072.CLP.BRL.N.O.D` del Banco Central de Chile; la moneda original de cada plan no se modifica.
 
-Una automatización posterior podrá consultar la API BDE con credenciales habilitadas por el BCCh y almacenadas exclusivamente como secretos del proceso (`BCCH_API_USER` y `BCCH_API_PASSWORD`, o nombres equivalentes). Esas credenciales nunca corresponden al frontend ni deben publicarse en Firestore.
+## Sincronización automática BRL → CLP
+
+El workflow independiente `sync-bcch-exchange-rate.yml` consulta mediante SOAP la serie diaria `F072.CLP.BRL.N.O.D` de la API BDE, selecciona la última observación válida de una ventana de 14 días y sincroniza `exchangeRates/BRL_CLP`. Se ejecuta de lunes a viernes a las 21:30 UTC, aproximadamente 17:30 en invierno y 18:30 en verano en Chile. Fines de semana, feriados y retrasos no son errores si existe una observación reciente.
+
+Configura estos GitHub Actions Secrets:
+
+- `BCCH_API_USER`: email de una cuenta BDE con acceso API habilitado.
+- `BCCH_API_PASSWORD`: contraseña de esa cuenta.
+- `FIREBASE_SERVICE_ACCOUNT_FIRESTORE_SYNC`: JSON completo de una service account dedicada con `roles/datastore.user` en `web-pack-tomorrowland`.
+
+La cuenta de Firestore no necesita permisos de Hosting ni administración IAM. Ningún Secret llega al frontend, a Firestore o a artefactos. El workflow también puede ejecutarse desde **Actions → Sync BCCh exchange rate → Run workflow**. Sus resultados posibles son `UPDATED`, `NO_CHANGE`, `CORRECTION`, `STALE_SOURCE` y `FAILED`; cada ejecución crea un documento administrativo en `syncRuns`, colección que no tiene lectura pública.
+
+`observedAt` es la fecha publicada por BCCh. `fetchedAt` identifica cuándo se obtuvo la observación actualmente almacenada y `updatedAt` cuándo se escribió ese estado; ambos cambian solamente en `UPDATED` o `CORRECTION`. Las ejecuciones sin cambios se trazan en `syncRuns`. Verifica la última ejecución en GitHub Actions y, administrativamente, en las colecciones `syncRuns` y `exchangeRates` de Firestore.
 
 Valida el dataset sin acceder a Firestore:
 

@@ -1,0 +1,29 @@
+name: Sync BCCh exchange rate
+
+on:
+  schedule:
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-bcch-exchange-rate
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BCCH_API_USER: ${{ secrets.BCCH_API_USER }}
+      BCCH_API_PASSWORD: ${{ secrets.BCCH_API_PASSWORD }}
+      FIREBASE_SERVICE_ACCOUNT_FIRESTORE_SYNC: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FIRESTORE_SYNC }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Sync BRL to CLP from BCCh
+        run: npm run sync:bcch
