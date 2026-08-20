@@ -18,6 +18,6 @@ function ForeignCurrencyConversion({ money, compact }: { money: Money; compact: 
   return <span className={`clp-conversion ${compact ? 'compact' : ''}`}>
     <strong>≈ {formatMoney(converted)} CLP</strong>
     <span>Conversión referencial</span>
-    {!compact && <small>1 {rate.fromCurrency} ≈ {formatMoney({ amount: rate.rate, currency: 'CLP' })} CLP · actualizado {formatDate(rate.observedAt)} · <a href={rate.sourceUrl} target="_blank" rel="noreferrer">{rate.sourceName}</a></small>}
+    {!compact && <small>1 {rate.fromCurrency} ≈ {formatMoney({ amount: rate.rate, currency: 'CLP' })} CLP · cotización {formatDate(rate.observedAt)} · <a href={rate.sourceUrl} target="_blank" rel="noreferrer">{rate.sourceName}</a> · serie {rate.sourceSeries}</small>}
   </span>
 }

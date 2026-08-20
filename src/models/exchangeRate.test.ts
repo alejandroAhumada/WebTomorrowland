@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { convertMoney, type ExchangeRate } from './exchangeRate'
 
 const brlClp: ExchangeRate = {
-  id: 'BRL_CLP', fromCurrency: 'BRL', toCurrency: 'CLP', rate: 175.62346329469617,
-  sourceUrl: 'https://www.bcb.gov.br/', sourceName: 'Banco Central do Brasil',
-  observedAt: '2026-08-17T13:00:00-03:00', fetchedAt: '2026-08-20T15:00:00-04:00', updatedAt: '2026-08-20T15:00:00-04:00',
+  id: 'BRL_CLP', fromCurrency: 'BRL', toCurrency: 'CLP', rate: 178.01,
+  sourceUrl: 'https://si3.bcentral.cl/', sourceName: 'Banco Central de Chile', sourceSeries: 'F072.CLP.BRL.N.O.D',
+  observedAt: '2026-08-20', fetchedAt: '2026-08-20T15:17:34-04:00', updatedAt: '2026-08-20T15:17:34-04:00',
 }
 
 describe('conversión monetaria', () => {
   it('convierte BRL a CLP y redondea al peso completo', () => {
-    expect(convertMoney({ amount: 7609, currency: 'BRL' }, 'CLP', brlClp)).toEqual({ amount: 1336319, currency: 'CLP' })
+    expect(convertMoney({ amount: 7609, currency: 'BRL' }, 'CLP', brlClp)).toEqual({ amount: 1354478, currency: 'CLP' })
   })
 
   it('devuelve null cuando la tasa no existe o no corresponde', () => {
@@ -25,5 +25,10 @@ describe('conversión monetaria', () => {
     const original = { amount: 3160, currency: 'BRL' as const }
     convertMoney(original, 'CLP', brlClp)
     expect(original).toEqual({ amount: 3160, currency: 'BRL' })
+  })
+
+  it('usa directamente la serie CLP por BRL del Banco Central de Chile', () => {
+    expect(brlClp).toMatchObject({ rate: 178.01, sourceName: 'Banco Central de Chile', sourceSeries: 'F072.CLP.BRL.N.O.D' })
+    expect(brlClp.sourceName).not.toContain('PTAX')
   })
 })

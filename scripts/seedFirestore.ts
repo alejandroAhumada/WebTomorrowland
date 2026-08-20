@@ -48,6 +48,12 @@ for (const document of storedRates) {
   if (!document.exists) throw new Error(`No se encontró la tasa ${document.id} después de escribir.`)
   const expected = productionExchangeRates.find((rate) => rate.id === document.id)!
   const stored = document.data()
-  if (stored?.rate !== expected.rate || stored.fromCurrency !== expected.fromCurrency || stored.toCurrency !== expected.toCurrency) throw new Error(`La tasa almacenada ${document.id} no coincide con el dataset.`)
+  if (stored?.rate !== expected.rate
+    || stored.fromCurrency !== expected.fromCurrency
+    || stored.toCurrency !== expected.toCurrency
+    || stored.sourceName !== expected.sourceName
+    || stored.sourceUrl !== expected.sourceUrl
+    || stored.sourceSeries !== expected.sourceSeries
+    || stored.observedAt !== expected.observedAt) throw new Error(`La tasa almacenada ${document.id} no coincide con el dataset.`)
 }
 console.log(`Tasas actualizadas y verificadas: ${storedRates.map((document) => document.id).join(', ')}`)

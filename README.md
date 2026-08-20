@@ -47,7 +47,9 @@ Las colecciones esperadas son `plans` y `exchangeRates`. Cada plan utiliza `Trav
 
 ## Dataset de producción
 
-Los planes trazables están definidos en `scripts/productionPlans.ts` y las tasas en `scripts/productionExchangeRates.ts`. El seed usa IDs estables, valida los datos antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas. La referencia BRL→CLP proviene del cierre PTAX del Banco Central do Brasil; la moneda original de cada plan no se modifica.
+Los planes trazables están definidos en `scripts/productionPlans.ts` y las tasas en `scripts/productionExchangeRates.ts`. El seed usa IDs estables, valida los datos antes de escribir y reemplaza idempotentemente esos documentos sin habilitar escrituras públicas. La referencia BRL→CLP usa directamente la serie diaria `F072.CLP.BRL.N.O.D` del Banco Central de Chile; la moneda original de cada plan no se modifica.
+
+Una automatización posterior podrá consultar la API BDE con credenciales habilitadas por el BCCh y almacenadas exclusivamente como secretos del proceso (`BCCH_API_USER` y `BCCH_API_PASSWORD`, o nombres equivalentes). Esas credenciales nunca corresponden al frontend ni deben publicarse en Firestore.
 
 Valida el dataset sin acceder a Firestore:
 

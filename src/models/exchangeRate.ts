@@ -7,6 +7,7 @@ export interface ExchangeRate {
   rate: number
   sourceUrl: string
   sourceName: string
+  sourceSeries: string
   observedAt: string
   fetchedAt: string
   updatedAt: string
@@ -21,7 +22,7 @@ export function validateExchangeRate(exchangeRate: ExchangeRate): string[] {
   if (exchangeRate.id !== exchangeRateId(exchangeRate.fromCurrency, exchangeRate.toCurrency)) errors.push('El ID de la tasa debe corresponder al par de monedas.')
   if (exchangeRate.fromCurrency === exchangeRate.toCurrency) errors.push('La tasa debe convertir entre monedas distintas.')
   if (!Number.isFinite(exchangeRate.rate) || exchangeRate.rate <= 0) errors.push('La tasa debe ser un número mayor que cero.')
-  if (!exchangeRate.sourceUrl || !exchangeRate.sourceName) errors.push('La tasa debe conservar una fuente trazable.')
+  if (!exchangeRate.sourceUrl || !exchangeRate.sourceName || !exchangeRate.sourceSeries) errors.push('La tasa debe conservar una fuente y serie trazables.')
   if (!exchangeRate.observedAt || !exchangeRate.fetchedAt || !exchangeRate.updatedAt) errors.push('La tasa debe conservar sus fechas de observación, consulta y actualización.')
   return errors
 }
