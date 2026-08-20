@@ -4,7 +4,7 @@ import { assertValidExchangeRate, type ExchangeRate } from '../src/models/exchan
 import {
   BCCH_SERIES, BCCH_SOAP_ENDPOINT, BCCH_SOURCE_NAME, EXCHANGE_RATE_ID, buildExchangeRate,
   buildGetSeriesSoapRequest, dateWindow, decideSync, firebaseAuthMode, parseBcchSoapResponse, readSyncConfig,
-  selectLatestObservation, type BcchObservation, type SyncResult,
+  selectLatestObservation, extractBcchPublicDiagnostics, type BcchObservation, type SyncResult,
 } from './bcchExchangeRateSync'
 
 const projectId = 'web-pack-tomorrowland'
@@ -23,7 +23,12 @@ try {
     signal: AbortSignal.timeout(30_000),
   })
   if (!response.ok) throw new Error(`La API BCCh respondió HTTP ${response.status}.`)
-  const fetched = selectLatestObservation(parseBcchSoapResponse(await response.text()), new Date())
+  const responseXml = await response.text()
+  if (process.env.BCCH_DIAGNOSTIC === 'true') {
+    const diagnostics = extractBcchPublicDiagnostics(responseXml).slice(-3)
+    console.log(`BCCh public response shape: ${JSON.stringify(diagnostics)}`)
+  }
+  const fetched = selectLatestObservation(parseBcchSoapResponse(responseXml), new Date())
   fetchedObservation = fetched
   const outcome = await persistSync(db, fetched)
   console.log(`BCCH FX sync: ${outcome.result}`)

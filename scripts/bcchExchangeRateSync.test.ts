@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ExchangeRate } from '../src/models/exchangeRate'
 import {
   BCCH_SERIES, buildExchangeRate, buildGetSeriesSoapRequest, dateWindow, decideSync, parseBcchDecimal,
-  firebaseAuthMode, parseBcchSoapResponse, readSyncConfig, selectLatestObservation, type BcchObservation,
+  extractBcchPublicDiagnostics, firebaseAuthMode, parseBcchSoapResponse, readSyncConfig, selectLatestObservation, type BcchObservation,
 } from './bcchExchangeRateSync'
 
 const response = (observations: Array<{ date: string; value: string }>, series = BCCH_SERIES) => `
@@ -17,6 +17,27 @@ const current = (observedAt: string, rate = 178.01): ExchangeRate => buildExchan
 describe('BCCh BDE', () => {
   it('parsea la respuesta SOAP y la serie exacta', () => {
     expect(parseBcchSoapResponse(response([{ date: '2026-08-20', value: '178.01' }]))).toEqual([observation('2026-08-20')])
+  })
+  it('normaliza el formato real BCCh dd-MM-yyyy sin depender del timezone', () => {
+    const parsed = parseBcchSoapResponse(response([{ date: '20-08-2026', value: '178.01' }]))
+    expect(parsed[0].observedAt).toBe('2026-08-20')
+  })
+  it('expone un diagnóstico limitado a campos públicos', () => {
+    expect(extractBcchPublicDiagnostics(response([{ date: '20-08-2026', value: '178.01' }]))).toEqual([
+      { series: BCCH_SERIES, dateField: 'indexDateString', rawDate: '20-08-2026', rawValue: '178.01' },
+    ])
+  })
+  it('normaliza cambio de mes, año, bisiesto y fecha con hora conocida', () => {
+    const parsed = parseBcchSoapResponse(response([
+      { date: '31/12/2025', value: '170' },
+      { date: '01/01/2026', value: '171' },
+      { date: '29-02-2024', value: '172' },
+      { date: '2026-08-20T00:00:00', value: '178.01' },
+    ]))
+    expect(parsed.map((item) => item.observedAt)).toEqual(['2025-12-31', '2026-01-01', '2024-02-29', '2026-08-20'])
+  })
+  it.each(['31/02/2026', '32/01/2026', '00/08/2026', '29-02-2025', 'texto arbitrario', '20/08', '2026-08-20texto'])('rechaza fecha imposible o incompleta: %s', (date) => {
+    expect(() => parseBcchSoapResponse(response([{ date, value: '178.01' }]))).toThrow('fecha inválida')
   })
   it('normaliza decimales con coma sin invertir la tasa', () => {
     expect(parseBcchDecimal('178,01')).toBe(178.01)

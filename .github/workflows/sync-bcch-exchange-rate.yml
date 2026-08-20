@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '30 21 * * 1-5'
   workflow_dispatch:
+    inputs:
+      diagnostic:
+        description: Log only public series/date/value response fields
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,6 +26,7 @@ jobs:
       BCCH_API_USER: ${{ secrets.BCCH_API_USER }}
       BCCH_API_PASSWORD: ${{ secrets.BCCH_API_PASSWORD }}
       FIREBASE_SERVICE_ACCOUNT_FIRESTORE_SYNC: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FIRESTORE_SYNC }}
+      BCCH_DIAGNOSTIC: ${{ inputs.diagnostic || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

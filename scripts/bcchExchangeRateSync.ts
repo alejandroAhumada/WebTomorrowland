@@ -8,6 +8,7 @@ export const EXCHANGE_RATE_ID = 'BRL_CLP'
 export const MAX_OBSERVATION_AGE_DAYS = 14
 
 export interface BcchObservation { series: string; observedAt: string; rate: number }
+export interface BcchPublicDiagnostic { series: string; dateField: 'indexDateString'; rawDate: string; rawValue: string }
 export type SyncResult = 'UPDATED' | 'NO_CHANGE' | 'CORRECTION' | 'STALE_SOURCE'
 
 export interface SyncDecision {
@@ -69,6 +70,19 @@ export function parseBcchSoapResponse(xml: string): BcchObservation[] {
   return observations
 }
 
+export function extractBcchPublicDiagnostics(xml: string): BcchPublicDiagnostic[] {
+  const seriesBlocks = readTags(xml, 'fameSeries')
+  return seriesBlocks.flatMap((seriesBlock) => {
+    const series = readTag(seriesBlock, 'seriesId')
+    return readTags(seriesBlock, 'obs').map((block) => ({
+      series,
+      dateField: 'indexDateString' as const,
+      rawDate: readTag(block, 'indexDateString'),
+      rawValue: readTag(block, 'value'),
+    }))
+  })
+}
+
 export function parseBcchDecimal(value: string): number {
   const normalized = value.trim().includes(',') ? value.trim().replace(/\./g, '').replace(',', '.') : value.trim()
   const parsed = Number(normalized)
@@ -82,7 +96,7 @@ export function selectLatestObservation(observations: BcchObservation[], now: Da
   const latest = sorted[0]
   if (!latest || !isIsoDate(latest.observedAt)) throw new Error('No existe una observación BCCh válida.')
   parseBcchDecimal(String(latest.rate))
-  const ageDays = Math.floor((startOfUtcDay(now).getTime() - new Date(`${latest.observedAt}T00:00:00Z`).getTime()) / 86_400_000)
+  const ageDays = Math.floor((startOfUtcDay(now).getTime() - isoDateToUtcTime(latest.observedAt)) / 86_400_000)
   if (ageDays < 0 || ageDays > MAX_OBSERVATION_AGE_DAYS) throw new Error('La observación BCCh está fuera de la ventana de vigencia.')
   return latest
 }
@@ -121,14 +135,32 @@ export function dateWindow(now: Date): { firstDate: string; lastDate: string } {
 }
 
 function normalizeDate(value: string): string {
-  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!match || !isIsoDate(match[0])) throw new Error('La API BCCh entregó una fecha inválida.')
-  return match[0]
+  const raw = value.trim()
+  const timestampSuffix = '(?:[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?)?'
+  const iso = raw.match(new RegExp(`^(\\d{4})-(\\d{2})-(\\d{2})${timestampSuffix}$`))
+  if (iso) return normalizeCalendarParts(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+  const dayFirst = raw.match(new RegExp(`^(\\d{2})([-/])(\\d{2})\\2(\\d{4})${timestampSuffix}$`))
+  if (dayFirst) return normalizeCalendarParts(Number(dayFirst[4]), Number(dayFirst[3]), Number(dayFirst[1]))
+  throw new Error('La API BCCh entregó una fecha inválida.')
 }
 
 function isIsoDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  return new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return false
+  try { return normalizeCalendarParts(Number(match[1]), Number(match[2]), Number(match[3])) === value } catch { return false }
+}
+
+function normalizeCalendarParts(year: number, month: number, day: number): string {
+  const timestamp = Date.UTC(year, month - 1, day)
+  const date = new Date(timestamp)
+  if (year < 1900 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error('La API BCCh entregó una fecha inválida.')
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function isoDateToUtcTime(value: string): number {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) throw new Error('La fecha normalizada no es válida.')
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
 
 function startOfUtcDay(value: Date): Date {
