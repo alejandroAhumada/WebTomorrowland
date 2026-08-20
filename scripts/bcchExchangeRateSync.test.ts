@@ -5,10 +5,10 @@ import {
   extractBcchPublicDiagnostics, firebaseAuthMode, parseBcchSoapResponse, readSyncConfig, selectLatestObservation, type BcchObservation,
 } from './bcchExchangeRateSync'
 
-const response = (observations: Array<{ date: string; value: string }>, series = BCCH_SERIES) => `
+const response = (observations: Array<{ date: string; value: string; status?: string }>, series = BCCH_SERIES) => `
 <soap:Envelope><soap:Body><GetSeriesResponse><GetSeriesResult><Codigo>0</Codigo><Series><fameSeries>
 <seriesKey><seriesId>${series}</seriesId></seriesKey>
-${observations.map(({ date, value }) => `<obs><indexDateString>${date}</indexDateString><seriesKey><seriesId>${series}</seriesId></seriesKey><statusCode>OK</statusCode><value>${value}</value></obs>`).join('')}
+${observations.map(({ date, value, status = 'OK' }) => `<obs><indexDateString>${date}</indexDateString><seriesKey><seriesId>${series}</seriesId></seriesKey><statusCode>${status}</statusCode><value>${value}</value></obs>`).join('')}
 </fameSeries></Series></GetSeriesResult></GetSeriesResponse></soap:Body></soap:Envelope>`
 
 const observation = (observedAt: string, rate = 178.01): BcchObservation => ({ series: BCCH_SERIES, observedAt, rate })
@@ -21,6 +21,21 @@ describe('BCCh BDE', () => {
   it('normaliza el formato real BCCh dd-MM-yyyy sin depender del timezone', () => {
     const parsed = parseBcchSoapResponse(response([{ date: '20-08-2026', value: '178.01' }]))
     expect(parsed[0].observedAt).toBe('2026-08-20')
+  })
+  it('parsea la respuesta SOAP real con días ND y selecciona el último valor OK', () => {
+    const parsed = parseBcchSoapResponse(response([
+      { date: '14-08-2026', value: '175.95' },
+      { date: '15-08-2026', value: 'NaN', status: 'ND' },
+      { date: '16-08-2026', value: 'NaN', status: 'ND' },
+      { date: '17-08-2026', value: '174.73' },
+      { date: '20-08-2026', value: '178.01' },
+    ]))
+    expect(parsed).toEqual([
+      observation('2026-08-14', 175.95),
+      observation('2026-08-17', 174.73),
+      observation('2026-08-20', 178.01),
+    ])
+    expect(selectLatestObservation(parsed, new Date('2026-08-20T23:30:00-03:00'))).toEqual(observation('2026-08-20', 178.01))
   })
   it('expone un diagnóstico limitado a campos públicos', () => {
     expect(extractBcchPublicDiagnostics(response([{ date: '20-08-2026', value: '178.01' }]))).toEqual([
@@ -61,6 +76,9 @@ describe('BCCh BDE', () => {
     expect(() => parseBcchDecimal('99999')).toThrow('tasa inválida')
     expect(() => parseBcchSoapResponse('{}')).toThrow('Respuesta BCCh inválida')
     expect(() => parseBcchSoapResponse(response([{ date: '2026-08-20', value: '178.01' }], 'OTHER'))).toThrow('serie inesperada')
+    expect(() => parseBcchSoapResponse(response([{ date: '20-08-2026', value: 'NaN', status: 'OK' }]))).toThrow('tasa inválida')
+    expect(() => parseBcchSoapResponse(response([{ date: '20-08-2026', value: '178.01', status: 'UNKNOWN' }]))).toThrow('estado de observación inesperado')
+    expect(() => parseBcchSoapResponse(response([{ date: '15-08-2026', value: 'NaN', status: 'ND' }]))).toThrow('no entregó observaciones')
     expect(() => selectLatestObservation([observation('2026-07-01')], new Date('2026-08-20T21:30:00Z'))).toThrow('ventana de vigencia')
   })
   it('requiere configuración sin incluir valores en el error', () => {

@@ -61,11 +61,16 @@ export function parseBcchSoapResponse(xml: string): BcchObservation[] {
   const series = readTag(seriesBlocks[0], 'seriesId')
   if (series !== BCCH_SERIES) throw new Error('La API BCCh respondió con una serie inesperada.')
 
-  const observations = readTags(seriesBlocks[0], 'obs').map((block) => ({
-    series,
-    observedAt: normalizeDate(readTag(block, 'indexDateString')),
-    rate: parseBcchDecimal(readTag(block, 'value')),
-  }))
+  const observations = readTags(seriesBlocks[0], 'obs').flatMap((block) => {
+    const statusCode = readTag(block, 'statusCode')
+    if (statusCode === 'ND') return []
+    if (statusCode !== 'OK') throw new Error('La API BCCh entregó un estado de observación inesperado.')
+    return [{
+      series,
+      observedAt: normalizeDate(readTag(block, 'indexDateString')),
+      rate: parseBcchDecimal(readTag(block, 'value')),
+    }]
+  })
   if (observations.length === 0) throw new Error('La API BCCh no entregó observaciones.')
   return observations
 }
