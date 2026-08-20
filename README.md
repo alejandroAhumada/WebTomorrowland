@@ -16,7 +16,7 @@ npm ci
 npm run dev
 ```
 
-Vite mostrará la URL local. La aplicación usa datos demo de forma predeterminada y no requiere una cuenta Firebase.
+Vite mostrará la URL local. El repositorio no incluye configuración privada ni archivos de entorno locales.
 
 ## Validaciones
 
@@ -31,13 +31,19 @@ npm run build
 
 ## Configuración de Firebase
 
-Firestore está preparado como fuente de producción, pero no contiene credenciales reales. Copia `.env.example` a `.env.local` y completa las variables `VITE_FIREBASE_*`. Para activar el adaptador remoto configura:
+Firestore es la fuente de producción del proyecto `web-pack-tomorrowland`. Copia `.env.example` a `.env` y completa la configuración pública de la Web App. Para activar el adaptador remoto configura:
 
 ```dotenv
 VITE_DATA_SOURCE=firestore
 ```
 
-La colección esperada es `plans`; cada documento utiliza el modelo `TravelPlan` definido en `src/models/plan.ts`. Las reglas incluidas permiten lectura pública de esa colección y bloquean escrituras del cliente. Revisa esas reglas antes de habilitar un proyecto real.
+Para trabajar con los datos demo sin consultar Firebase, usa `VITE_DATA_SOURCE=demo` en el archivo local o para un solo comando:
+
+```bash
+VITE_DATA_SOURCE=demo npm run dev
+```
+
+La colección esperada es `plans`; cada documento utiliza el modelo `TravelPlan` definido en `src/models/plan.ts`. Las reglas incluidas permiten lectura pública de esa colección y bloquean todas las escrituras del cliente. Una colección vacía muestra un estado informativo y nunca provoca que los datos demo se publiquen automáticamente.
 
 ## Estructura
 
@@ -56,14 +62,17 @@ src/
 
 ## CI y despliegue posterior
 
-El workflow `.github/workflows/ci-deploy.yml` instala con `npm ci` y ejecuta lint, tests y build en cada pull request y push a `main`. En un push a `main`, el job de deploy publica en Firebase Hosting solo si el repositorio tiene configurados estos GitHub Secrets:
+El workflow `.github/workflows/ci-deploy.yml` instala con `npm ci` y ejecuta lint, tests, typecheck y build en cada pull request y push a `main`. En un push a `main`, el mismo job publica exclusivamente Firebase Hosting después de aprobar todas las validaciones. Las reglas Firestore permanecen versionadas y su despliegue es manual.
 
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_SERVICE_ACCOUNT`
+Configura estas GitHub Actions Variables, todas correspondientes a la configuración pública de la Web App:
+
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
 
-No se ha creado ningún recurso remoto ni realizado un despliegue. Para una configuración manual futura, copia `.firebaserc.example` a `.firebaserc`, reemplaza el ID de ejemplo y registra los secretos anteriores en GitHub.
+El único GitHub Actions Secret requerido es `FIREBASE_SERVICE_ACCOUNT_WEB_PACK_TOMORROWLAND`, cuyo valor debe ser el JSON completo de una service account autorizada para desplegar Firebase Hosting. Nunca guardes ese JSON en el repositorio.
+
+Para usar Firebase CLI localmente, copia `.firebaserc.example` a `.firebaserc` y configura `web-pack-tomorrowland` como proyecto predeterminado. El archivo real permanece ignorado por Git. La configuración pública del SDK Web no debe confundirse con una service account ni con credenciales privadas.
