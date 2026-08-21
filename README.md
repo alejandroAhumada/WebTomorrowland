@@ -100,7 +100,7 @@ Para preparar producción se requieren tres identidades separadas:
 
 - Runtime `tomorrowland-sync-api`: `roles/datastore.user` en el proyecto.
 - Caller `tomorrowland-sync-client`: `roles/run.invoker` únicamente sobre la función/servicio desplegado; la configuración `invoker` del código aplica esta relación.
-- Deploy `tomorrowland-sync-deploy`: `roles/cloudfunctions.developer` en el proyecto y `roles/iam.serviceAccountUser` sobre la identidad runtime y la cuenta de Cloud Build correspondiente. Guarda su JSON completo únicamente en el GitHub Secret `FIREBASE_SERVICE_ACCOUNT_FUNCTIONS_DEPLOY`.
+- Deploy `tomorrowland-sync-deploy`: `roles/cloudfunctions.admin` en el proyecto —necesario para aplicar la política `invoker` privada— y `roles/iam.serviceAccountUser` sobre la identidad runtime y la cuenta de Cloud Build correspondiente. Un rol personalizado puede reemplazar al rol Admin si incluye los permisos de despliegue y `cloudfunctions.functions.setIamPolicy`. Guarda su JSON completo únicamente en el GitHub Secret `FIREBASE_SERVICE_ACCOUNT_FUNCTIONS_DEPLOY`.
 
 El proyecto debe estar en el plan Blaze para habilitar Cloud Functions, Cloud Build y Artifact Registry. La API no puede desplegarse mientras permanezca en Spark.
 
