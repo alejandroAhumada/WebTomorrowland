@@ -14,6 +14,8 @@ El componente Tomorrowland se convierte dinámicamente a CLP mediante la tasa BC
 
 Desde el detalle de cualquier plan, **Ajustar mi presupuesto** permite personalizar duración y todos los supuestos estimados. Las preferencias se aplican globalmente a cards, detalles y comparador, se validan antes de usarse y se guardan solo en el navegador bajo `webtomorrowland:budget-preferences:v1`. El botón **Restablecer estimaciones** elimina la personalización y recupera la fuente única de defaults. Los límites actuales son 1–30 días, 0–30 noches y valores monetarios enteros entre CLP 0 y máximos amplios definidos por categoría; los valores inválidos muestran feedback y nunca se corrigen silenciosamente.
 
+La Home calcula recomendaciones explicables para 1 o 2 personas sin persistir rankings: menor presupuesto completo por persona, menor precio Tomorrowland original BRL por persona y menor presupuesto entre planes con alojamiento incluido. Los planes `PENDING` o sin conversión requerida quedan fuera del criterio correspondiente. Cada criterio conserva su ganador real; cuando un plan gana varios, las fortalezas se agrupan en una sola card. Los empates se resuelven por métrica, precio Tomorrowland BRL por persona, nombre e ID. Las preferencias locales recalculan estos resultados inmediatamente.
+
 ## Requisitos
 
 - Node.js 22

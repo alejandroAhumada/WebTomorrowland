@@ -4,6 +4,7 @@ export interface SelectionValue {
   selectedIds: string[]
   toggle: (id: string) => void
   clear: () => void
+  replace: (ids: string[]) => void
   isSelected: (id: string) => boolean
   isFull: boolean
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { MAX_COMPARISON_PLANS, toggleSelection } from './selection'
+import { MAX_COMPARISON_PLANS, normalizeSelection, toggleSelection } from './selection'
 import { SelectionContext, type SelectionValue } from './useSelection'
 
 export function SelectionProvider({ children }: { children: ReactNode }) {
@@ -8,6 +8,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     selectedIds,
     toggle: (id) => setSelectedIds((current) => toggleSelection(current, id)),
     clear: () => setSelectedIds([]),
+    replace: (ids) => setSelectedIds(normalizeSelection(ids)),
     isSelected: (id) => selectedIds.includes(id),
     isFull: selectedIds.length >= MAX_COMPARISON_PLANS,
   }), [selectedIds])
