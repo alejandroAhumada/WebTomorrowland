@@ -1,4 +1,4 @@
-import { Bus, CircleHelp, Coins, Plane, ReceiptText, Utensils, WalletCards } from 'lucide-react'
+import { Bus, CircleHelp, Coins, Hotel, Plane, ReceiptText, Utensils, WalletCards } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { TravelBudget, BudgetCategory } from '../models/travelBudget'
 import { budgetItemTotalMoney } from '../models/travelBudget'
@@ -7,6 +7,7 @@ import { formatDate, formatMoney } from '../utils/format'
 const budgetCategoryLabels: Record<BudgetCategory, string> = {
   TOMORROWLAND: 'Tomorrowland',
   FLIGHT: 'Vuelo',
+  EXTERNAL_ACCOMMODATION: 'Alojamiento externo',
   LOCAL_TRANSPORT: 'Transporte local',
   FOOD: 'Alimentación',
   PERSONAL_EXPENSES: 'Gastos personales',
@@ -15,6 +16,7 @@ const budgetCategoryLabels: Record<BudgetCategory, string> = {
 const budgetIcons: Record<BudgetCategory, LucideIcon> = {
   TOMORROWLAND: ReceiptText,
   FLIGHT: Plane,
+  EXTERNAL_ACCOMMODATION: Hotel,
   LOCAL_TRANSPORT: Bus,
   FOOD: Utensils,
   PERSONAL_EXPENSES: WalletCards,
@@ -32,11 +34,18 @@ export function TravelBudgetBreakdown({ budget, loading = false }: { budget: Tra
     <ul>{budget.items.map((item) => {
       const Icon = budgetIcons[item.category]
       const total = budgetItemTotalMoney(item)
-      return <li key={item.category}><span className="budget-item-icon"><Icon aria-hidden="true" /></span><div><strong>{budgetCategoryLabels[item.category]}</strong><small>{item.description} · {item.scope === 'PER_PERSON' ? 'por persona' : 'por grupo'} · actualizado {formatDate(item.updatedAt)}</small>{item.category === 'TOMORROWLAND' && item.originalPriceType && <em>Precio original {item.originalPriceType === 'OFFICIAL' ? 'oficial' : 'estimado'}; conversión CLP referencial.</em>}</div><b>{total ? formatMoney(total) : 'Pendiente'}</b></li>
-    })}</ul>
+      return <li key={item.category}><span className="budget-item-icon"><Icon aria-hidden="true" /></span><div><strong>{budgetCategoryLabels[item.category]}</strong><small>{item.description} · {budgetUnitLabel(item)} · actualizado {formatDate(item.updatedAt)}</small>{item.category === 'TOMORROWLAND' && item.originalPriceType && <em>Precio original {item.originalPriceType === 'OFFICIAL' ? 'oficial' : 'estimado'}; conversión CLP referencial.</em>}</div><b>{total ? formatMoney(total) : 'Pendiente'}</b></li>
+    })}{budget.accommodationIncluded && <li className="budget-included"><span className="budget-item-icon"><Hotel aria-hidden="true" /></span><div><strong>Alojamiento</strong><small>Ya está incluido en el plan Tomorrowland.</small></div><b>Incluido</b></li>}</ul>
     {loading ? <div className="budget-pending"><CircleHelp aria-hidden="true" /><p><strong>Calculando presupuesto</strong>Estamos obteniendo la conversión CLP referencial.</p></div> : budget.total && budget.totalPerPerson ? <div className="budget-totals"><div><span>Total aproximado</span><strong>{formatMoney(budget.total)}</strong></div><div><span>Aprox. por persona</span><strong>{formatMoney(budget.totalPerPerson)}</strong></div></div> : <div className="budget-pending"><CircleHelp aria-hidden="true" /><p><strong>Total pendiente</strong>{pendingBudgetMessage(budget)}</p></div>}
     <p className="budget-disclaimer">Este presupuesto es una estimación independiente para planificación. No representa un precio publicado por Tomorrowland.</p>
   </section>
+}
+
+function budgetUnitLabel(item: TravelBudget['items'][number]): string {
+  const price = item.money ? formatMoney(item.money) : 'Monto pendiente'
+  if (item.unit === 'NIGHT') return `${price} × ${item.quantity} noches · por grupo/habitación`
+  if (item.unit === 'DAY') return `${price} × ${item.quantity} días${item.scope === 'PER_PERSON' ? ' × persona' : ''}`
+  return `${price} ${item.scope === 'PER_PERSON' ? 'por persona' : 'por grupo'}`
 }
 
 function pendingBudgetMessage(budget: TravelBudget): string {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { initialTravelBudgetEstimates } from '../data/travelBudgetEstimates'
 import { localExchangeRates } from '../data/localExchangeRates'
 import { demoPlans } from '../data/demoPlans'
+import { productionPlans } from '../../scripts/productionPlans'
 import type { TravelPlan } from './plan'
 import { budgetCategoryOrder, budgetItemTotal, createTravelBudget } from './travelBudget'
 
@@ -55,7 +56,7 @@ describe('presupuesto completo del viaje', () => {
 
   it('mantiene el orden de categorías', () => {
     const reversed = [...initialTravelBudgetEstimates].reverse()
-    expect(createTravelBudget(plan(1), reversed, localExchangeRates[0]).items.map((item) => item.category)).toEqual(budgetCategoryOrder)
+    expect(createTravelBudget(plan(1), reversed, localExchangeRates[0]).items.map((item) => item.category)).toEqual(budgetCategoryOrder.filter((category) => category !== 'EXTERNAL_ACCOMMODATION'))
   })
 
   it('no muta plan, estimaciones ni tasa', () => {
@@ -63,6 +64,43 @@ describe('presupuesto completo del viaje', () => {
     const snapshot = structuredClone({ source, estimates, rate })
     createTravelBudget(source, estimates, rate)
     expect({ source, estimates, rate }).toEqual(snapshot)
+  })
+
+  it.each(['full-madness-1p-2027', 'full-madness-2p-2027'])('%s agrega alojamiento externo una sola vez por grupo', (id) => {
+    const source = productionPlans.find((item) => item.id === id)!
+    const budget = createTravelBudget(source, initialTravelBudgetEstimates, localExchangeRates[0])
+    const lodging = budget.items.filter((item) => item.category === 'EXTERNAL_ACCOMMODATION')
+    expect(lodging).toHaveLength(1)
+    expect(budgetItemTotal(lodging[0])).toBe(280000)
+  })
+
+  it('calcula los totales productivos de Full Madness para uno y dos viajeros', () => {
+    const one = createTravelBudget(productionPlans.find((item) => item.id === 'full-madness-1p-2027')!, initialTravelBudgetEstimates, localExchangeRates[0])
+    const two = createTravelBudget(productionPlans.find((item) => item.id === 'full-madness-2p-2027')!, initialTravelBudgetEstimates, localExchangeRates[0])
+    expect(one.total?.amount).toBe(1692512)
+    expect(one.totalPerPerson?.amount).toBe(1692512)
+    expect(two.total?.amount).toBe(2985023)
+    expect(two.totalPerPerson?.amount).toBe(1492511.5)
+  })
+
+  it.each(['vida-nova-2p-2027', 'easy-tent-2p-2027', 'spectacular-easy-tent-2p-2027', 'global-journey-hotel-1p-2027', 'global-journey-hotel-2p-2027'])('%s reconoce el alojamiento incluido sin duplicarlo', (id) => {
+    const source = productionPlans.find((item) => item.id === id)!
+    const budget = createTravelBudget(source, initialTravelBudgetEstimates, localExchangeRates[0])
+    expect(budget.accommodationIncluded).toBe(true)
+    expect(budget.items.some((item) => item.category === 'EXTERNAL_ACCOMMODATION')).toBe(false)
+  })
+
+  it('calcula alojamiento por noches y alimentación por días y viajeros', () => {
+    const budget = createTravelBudget(productionPlans.find((item) => item.id === 'full-madness-2p-2027')!, initialTravelBudgetEstimates, localExchangeRates[0])
+    expect(budgetItemTotal(budget.items.find((item) => item.category === 'EXTERNAL_ACCOMMODATION')!)).toBe(70000 * 4)
+    expect(budgetItemTotal(budget.items.find((item) => item.category === 'FOOD')!)).toBe(36000 * 5 * 2)
+  })
+
+  it('un plan PENDING conserva alojamiento externo conocido sin declarar total', () => {
+    const source = { ...productionPlans.find((item) => item.id === 'full-madness-1p-2027')!, totalPrice: null, priceType: null }
+    const budget = createTravelBudget(source, initialTravelBudgetEstimates)
+    expect(budget.items.find((item) => item.category === 'EXTERNAL_ACCOMMODATION')?.money).toEqual({ amount: 70000, currency: 'CLP' })
+    expect(budget).toMatchObject({ total: null, totalPerPerson: null, pendingReason: 'PLAN_PRICE' })
   })
 
   it('maneja configuración vacía sin tratarla como error', () => {

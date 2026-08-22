@@ -32,10 +32,11 @@ function DesktopComparison({ plans, onRemove }: { plans: TravelPlan[]; onRemove:
     <Row label="Presupuesto por persona" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} field="perPerson" />} />
     <Row icon={<Ticket />} label="Tomorrowland (CLP ref.)" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="TOMORROWLAND" />} />
     <Row icon={<Plane />} label="Vuelo" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="FLIGHT" />} />
+    <Row icon={<Hotel />} label="Alojamiento" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="EXTERNAL_ACCOMMODATION" />} />
     <Row icon={<Bus />} label="Transporte local" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="LOCAL_TRANSPORT" />} />
     <Row icon={<Utensils />} label="Alimentación" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="FOOD" />} />
     <Row icon={<WalletCards />} label="Gastos personales" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="PERSONAL_EXPENSES" />} />
-    <Row icon={<Hotel />} label="Alojamiento" plans={plans} render={(plan) => plan.accommodation} />
+    <Row icon={<Hotel />} label="Tipo de alojamiento" plans={plans} render={(plan) => plan.accommodation} />
     <Row icon={<Plane />} label="Transporte" plans={plans} render={(plan) => plan.transport} />
     <Row icon={<Ticket />} label="Festival / entrada" plans={plans} render={(plan) => plan.festivalPass} />
     <Row icon={<TentTree />} label="DreamVille" plans={plans} render={(plan) => <BooleanValue value={plan.dreamVilleIncluded} trueLabel="Incluido, equipamiento provisto" falseLabel="No incluido" />} />
@@ -69,16 +70,17 @@ export function BudgetCompareValue({ plan, field, category }: { plan: TravelPlan
   if (field === 'total') return <span className="budget-compare">{budget.total ? `≈ ${formatMoney(budget.total)}` : 'Pendiente de precio Tomorrowland'}</span>
   if (field === 'perPerson') return <span className="budget-compare emphasis">{budget.totalPerPerson ? `≈ ${formatMoney(budget.totalPerPerson)}` : 'Pendiente'}</span>
   const item = budget.items.find((candidate) => candidate.category === category)
+  if (category === 'EXTERNAL_ACCOMMODATION' && budget.accommodationIncluded) return <span className="budget-compare positive">Incluido</span>
   const money = item ? budgetItemTotalMoney(item) : null
   return <span className="budget-compare">{money ? formatMoney(money) : 'Pendiente'}</span>
 }
 
 function MobileBudgetComparison({ plan }: { plan: TravelPlan }) {
   const { budget, loading } = useTravelBudget(plan)
-  return <section className="mobile-budget"><h3><Coins aria-hidden="true" />Presupuesto completo estimado</h3>{loading ? <p>Calculando…</p> : <><dl>{budget.items.map((item) => { const money = budgetItemTotalMoney(item); return <div key={item.category}><dt>{mobileBudgetLabels[item.category]}</dt><dd>{money ? formatMoney(money) : 'Pendiente'}</dd></div> })}</dl><div className="mobile-budget-total"><span>Total</span><strong>{budget.total ? `≈ ${formatMoney(budget.total)}` : 'Pendiente'}</strong><span>Por persona</span><strong>{budget.totalPerPerson ? `≈ ${formatMoney(budget.totalPerPerson)}` : 'Pendiente'}</strong></div></>}</section>
+  return <section className="mobile-budget"><h3><Coins aria-hidden="true" />Presupuesto completo estimado</h3>{loading ? <p>Calculando…</p> : <><dl>{budget.items.map((item) => { const money = budgetItemTotalMoney(item); return <div key={item.category}><dt>{mobileBudgetLabels[item.category]}</dt><dd>{money ? formatMoney(money) : 'Pendiente'}</dd></div> })}{budget.accommodationIncluded && <div><dt>Alojamiento</dt><dd>Incluido</dd></div>}</dl><div className="mobile-budget-total"><span>Total</span><strong>{budget.total ? `≈ ${formatMoney(budget.total)}` : 'Pendiente'}</strong><span>Por persona</span><strong>{budget.totalPerPerson ? `≈ ${formatMoney(budget.totalPerPerson)}` : 'Pendiente'}</strong></div></>}</section>
 }
 
-const mobileBudgetLabels: Record<BudgetCategory, string> = { TOMORROWLAND: 'Tomorrowland', FLIGHT: 'Vuelo', LOCAL_TRANSPORT: 'Transporte', FOOD: 'Alimentación', PERSONAL_EXPENSES: 'Gastos personales' }
+const mobileBudgetLabels: Record<BudgetCategory, string> = { TOMORROWLAND: 'Tomorrowland', FLIGHT: 'Vuelo', EXTERNAL_ACCOMMODATION: 'Alojamiento externo', LOCAL_TRANSPORT: 'Transporte', FOOD: 'Alimentación', PERSONAL_EXPENSES: 'Gastos personales' }
 
 function PlanHeading({ plan, onRemove }: { plan: TravelPlan; onRemove: (id: string) => void }) {
   return <div className="compare-plan-heading"><span>{plan.name}</span><small>{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</small><button type="button" onClick={() => onRemove(plan.id)} aria-label={`Quitar ${plan.name}`}><X aria-hidden="true" />Quitar</button></div>
