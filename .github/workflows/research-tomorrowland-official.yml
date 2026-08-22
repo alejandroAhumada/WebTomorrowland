@@ -1,0 +1,58 @@
+name: Research Tomorrowland official sources
+
+on:
+  schedule:
+    - cron: '17 */8 * * *'
+  workflow_dispatch:
+    inputs:
+      apply_changes:
+        description: Apply only proposals whose Sync API dry-run returns UPDATED
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: research-tomorrowland-official
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TOMORROWLAND_RESEARCH_STATE_PATH: .cache/tomorrowland-research-state.json
+      RESEARCH_APPLY_CHANGES: ${{ github.event_name == 'schedule' || inputs.apply_changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run typecheck
+      - name: Restore research source state
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/tomorrowland-research-state.json
+          key: tomorrowland-research-${{ github.run_id }}
+          restore-keys: tomorrowland-research-
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_TOMORROWLAND_RESEARCH_WIF_PROVIDER }}
+          service_account: tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: https://synctomorrowlandplan-roe56dc57a-uc.a.run.app
+      - name: Research and validate official sources
+        env:
+          SYNC_API_ID_TOKEN: ${{ steps.auth.outputs.id_token }}
+        run: npm run research:tomorrowland
+      - name: Save research source state
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/tomorrowland-research-state.json
+          key: tomorrowland-research-${{ github.run_id }}

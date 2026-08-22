@@ -126,6 +126,26 @@ GOOGLE_APPLICATION_CREDENTIALS=/ruta/segura/service-account.json npm run seed:fi
 
 Nunca copies la clave dentro del proyecto. El script apunta explícitamente a `web-pack-tomorrowland` y falla si la colección final contiene IDs distintos del dataset esperado.
 
+## Tomorrowland Official Research Agent
+
+El investigador específico de Tomorrowland Brasil 2027 se ejecuta en GitHub Actions, separado del frontend, del sincronizador BCCh y de Firebase Admin. Cada ocho horas (`17 */8 * * *`, UTC) descarga únicamente las ocho fuentes oficiales configuradas en `scripts/tomorrowlandResearch.ts`, extrae evidencia pequeña, genera IDs deterministas y envía propuestas exclusivamente a Tomorrowland Sync API. No tiene acceso directo a Firestore y no crea ni elimina planes.
+
+La primera versión es determinista y no utiliza OpenAI. Los precios solo se extraen cuando un encabezado de producto exacto tiene un único importe BRL asociado en el HTML semántico. Se monitorizan directamente `Full Madness Pass` 1P, `Vida Nova 2P`, `Easy Tent 2P` y `Spectacular Easy Tent 2P`. `full-madness-2p-2027` conserva `ESTIMATED`: nunca se convierte en oficial por multiplicar el ticket unitario. Los Global Journey permanecen sin propuesta hasta que la fuente publique un precio inequívoco asociado explícitamente a ocupación 1P o 2P.
+
+El fetch exige HTTPS y hostname exacto `tomorrowland.com`, `www.tomorrowland.com` o `brasil.tomorrowland.com`; limita redirects, tiempo, tamaño y `Content-Type`. Un 404, timeout, captcha, HTML inválido, precio ausente o ambiguo falla visiblemente y nunca produce una escritura. No se guardan páginas completas: la evidencia se limita a producto y precio. El hash usa contenido relevante normalizado y se conserva en cache de Actions; es una optimización, no una barrera de consistencia.
+
+```text
+fuente oficial -> evidencia -> propuesta -> Sync API dry-run
+                                      UPDATED -> misma propuesta real
+                                      NO_CHANGE/REJECTED/error -> no escribir
+```
+
+La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas cuyo resultado sea `UPDATED`. El cron utiliza el flujo completo. Los logs muestran fuente, hash abreviado, plan, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+
+GitHub se autentica sin claves mediante OIDC y Workload Identity Federation, impersonando `tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com`. Configura la variable `GCP_TOMORROWLAND_RESEARCH_WIF_PROVIDER` con el nombre completo del provider, por ejemplo `projects/672021161403/locations/global/workloadIdentityPools/POOL/providers/PROVIDER`. El provider debe restringir `repository == 'alejandroAhumada/WebTomorrowland'`, y solo ese principal debe tener `roles/iam.workloadIdentityUser` sobre la cuenta caller. No se requiere `OPENAI_API_KEY`, service-account JSON ni permiso Firestore.
+
+Para agregar una fuente, incorpora una entrada con URL oficial, planes existentes y título de producto inequívoco; añade fixtures para precio válido, ausencia y ambigüedad. No agregues un plan nuevo ni una inferencia de ocupación dentro del investigador: primero amplía y revisa explícitamente el dominio y la Sync API.
+
 ## Estructura
 
 ```text
@@ -139,6 +159,8 @@ src/
 └── utils/       Formato y etiquetas
 functions/
 └── src/         Sync API, reglas de propuestas y adaptador administrativo Firestore
+scripts/
+└── tomorrowlandResearch.ts  Fetch, extracción, evidencia y cliente Sync API
 ```
 
 `firebase.json` configura Firebase Hosting como SPA y `firestore.rules` mantiene el acceso público en modo lectura. Los datos demo están en `src/data/demoPlans.ts`.
