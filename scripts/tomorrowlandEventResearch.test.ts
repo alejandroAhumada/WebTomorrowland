@@ -70,6 +70,13 @@ describe('investigación determinista de acontecimientos', () => {
     expect(buildEventProposal(event, '2026-08-22T12:00:00Z').operation).toBe('CREATE')
   })
 
+  it('procesa contenido oficial grande sin degradación exponencial', () => {
+    const largePage = `${'Tomorrowland Brasil 2027 información editorial. '.repeat(20_000)}DreamVille Package Sale starts October 1, 2026 - 10:00 BRT.`
+    const started = performance.now()
+    expect(detectSalesEvents(largePage, salesUrl).at(-1)?.eventId).toBe('dreamville-package-sale-2027')
+    expect(performance.now() - started).toBeLessThan(1_000)
+  })
+
   it('proposalId es determinista para la misma evidencia', () => {
     const event = detectSalesEvents(salesFixture, salesUrl)[1]
     expect(buildEventProposal(event, '2026-08-22T12:00:00Z').proposalId).toBe(buildEventProposal(event, '2026-08-22T12:00:00Z').proposalId)

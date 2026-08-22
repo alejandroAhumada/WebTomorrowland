@@ -271,7 +271,7 @@ function detectedKnown(id: string, title: string, type: ImportantEventType, star
 
 function detectGenericSales(text: string, sourceUrl: string, knownIds: Set<string>): DetectedImportantEvent[] {
   const result: DetectedImportantEvent[] = []
-  const pattern = /((?:[A-Z][A-Za-z0-9&' -]+){1,8}(?:Pre-Sale|Sale|Pre-Registration|Simulator))[^.]{0,160}?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(2026|2027)\s*(?:-|at)\s*(\d{1,2}):(\d{2})\s*BRT/gi
+  const pattern = /([A-Z][A-Za-z0-9&' -]{2,100}(?:Pre-Sale|Sale|Pre-Registration|Simulator))[^.]{0,160}?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(2026|2027)\s*(?:-|at)\s*(\d{1,2}):(\d{2})\s*BRT/gi
   for (const match of text.matchAll(pattern)) {
     const title = match[1].trim().replace(/\s+/g, ' ')
     if (/Tomorrowland Brasil|Global Journey|Bybit|World(?:\s|-)?Wide|Pre-Registration/i.test(title)) continue
