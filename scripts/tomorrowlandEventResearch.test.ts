@@ -28,6 +28,15 @@ describe('investigación determinista de acontecimientos', () => {
     ])
   })
 
+  it('detecta el pre-registro con el texto exacto publicado en la fuente real', () => {
+    const fixture = 'Tomorrowland Brasil 2027. Pre-Registration is required. Go to your Tomorrowland Account to pre-register from April 30, 2026 - 10:00 BRT until September 23, 2026 - 23:59 BRT.'
+    expect(detectSalesEvents(fixture, salesUrl)[0]).toMatchObject({
+      eventId: 'pre-registration-2027',
+      startsAt: '2026-04-30T10:00:00-03:00',
+      endsAt: '2026-09-23T23:59:00-03:00',
+    })
+  })
+
   it('detecta el rango oficial del festival', () => {
     expect(detectFestivalEvent(festivalFixture.replace(/<[^>]+>/g, ' '), EVENT_RESEARCH_SOURCES[1].url)[0]).toMatchObject({
       eventId: 'tomorrowland-brasil-2027', startsAt: '2027-04-30', endsAt: '2027-05-02',

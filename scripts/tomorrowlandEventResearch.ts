@@ -132,7 +132,7 @@ export function detectSalesEvents(text: string, sourceUrl: string): DetectedImpo
     },
   ]
 
-  const registration = text.match(/Pre-Registration[^.]{0,260}?from\s+(April\s+30,\s+2026\s*(?:-|at)\s*10:00\s*BRT)[^.]{0,160}?until\s+(September\s+23,\s+2026\s*(?:-|at)\s*23:59\s*BRT)/i)
+  const registration = text.match(/(?:pre-register\s+from|Pre-Registration[^.]{0,400}?from)\s+(April\s+30,\s+2026\s*(?:-|at)\s*10:00\s*BRT)[^.]{0,160}?until\s+(September\s+23,\s+2026\s*(?:-|at)\s*23:59\s*BRT)/i)
   if (registration) {
     events.push(detectedKnown('pre-registration-2027', 'Pre-registro Tomorrowland Brasil 2027', 'REGISTRATION', registration[1], sourceUrl, registration[0], registration[2]))
   }
