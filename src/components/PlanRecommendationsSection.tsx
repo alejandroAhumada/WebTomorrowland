@@ -8,6 +8,7 @@ import { useSelection } from '../state/useSelection'
 import { formatMoney } from '../utils/format'
 import { PlanDetailDialog } from './PlanDetailDialog'
 import { PriceBadge } from './PriceBadge'
+import { useMyTrip } from '../state/useMyTrip'
 
 const criterionContent: Record<PlanRecommendationCriterion, { label: string; icon: LucideIcon }> = {
   LOWEST_TRIP_BUDGET: { label: 'Menor presupuesto completo', icon: WalletCards },
@@ -21,6 +22,7 @@ export function PlanRecommendationsSection() {
   const { recommendations, loading, error, customized } = usePlanRecommendations(travelerCount)
   const { replace } = useSelection()
   const navigate = useNavigate()
+  const { isMyPlan } = useMyTrip()
   const compareIds = recommendations.map((item) => item.plan.id)
 
   return <section className="recommendations-section" aria-labelledby="recommendations-title">
@@ -29,14 +31,14 @@ export function PlanRecommendationsSection() {
     {loading && <p className="recommendations-notice">Calculando alternativas con precio conocido…</p>}
     {!loading && error && <p className="recommendations-notice error" role="alert">No pudimos calcular recomendaciones en este momento.</p>}
     {!loading && !error && recommendations.length === 0 && <p className="recommendations-notice">Todavía no existen alternativas con información suficiente para estos criterios.</p>}
-    {!loading && !error && recommendations.length > 0 && <div className="recommendation-grid">{recommendations.map((recommendation) => <RecommendationCard key={recommendation.plan.id} recommendation={recommendation} onOpen={() => setDetailed(recommendation.plan)} />)}</div>}
+    {!loading && !error && recommendations.length > 0 && <div className="recommendation-grid">{recommendations.map((recommendation) => <RecommendationCard key={recommendation.plan.id} recommendation={recommendation} onOpen={() => setDetailed(recommendation.plan)} isMyPlan={isMyPlan(recommendation.plan.id)} />)}</div>}
     {!loading && !error && compareIds.length >= 2 && <button className="button secondary recommendations-compare" type="button" onClick={() => { replace(compareIds); navigate('/comparar') }}><Columns3 aria-hidden="true" />Comparar recomendadas</button>}
     {detailed && <PlanDetailDialog plan={detailed} onClose={() => setDetailed(null)} />}
   </section>
 }
 
-export function RecommendationCard({ recommendation, onOpen }: { recommendation: PlanRecommendation; onOpen: () => void }) {
-  return <article className="recommendation-card"><header><span>{recommendation.plan.travelerCount === 1 ? <UserRound aria-hidden="true" /> : <UsersRound aria-hidden="true" />}{recommendation.plan.travelerCount} {recommendation.plan.travelerCount === 1 ? 'persona' : 'personas'}</span><h3>{recommendation.plan.name}</h3></header><div className="recommendation-highlights">{recommendation.highlights.map((highlight) => <RecommendationMetric key={highlight.criterion} highlight={highlight} priceType={recommendation.plan.priceType} />)}</div><button className="detail-button" type="button" onClick={onOpen}>Ver detalles <ArrowRight aria-hidden="true" /></button></article>
+export function RecommendationCard({ recommendation, onOpen, isMyPlan = false }: { recommendation: PlanRecommendation; onOpen: () => void; isMyPlan?: boolean }) {
+  return <article className="recommendation-card"><header><span>{recommendation.plan.travelerCount === 1 ? <UserRound aria-hidden="true" /> : <UsersRound aria-hidden="true" />}{recommendation.plan.travelerCount} {recommendation.plan.travelerCount === 1 ? 'persona' : 'personas'}{isMyPlan && <em>Mi plan</em>}</span><h3>{recommendation.plan.name}</h3></header><div className="recommendation-highlights">{recommendation.highlights.map((highlight) => <RecommendationMetric key={highlight.criterion} highlight={highlight} priceType={recommendation.plan.priceType} />)}</div><button className="detail-button" type="button" onClick={onOpen}>Ver detalles <ArrowRight aria-hidden="true" /></button></article>
 }
 
 function RecommendationMetric({ highlight, priceType }: { highlight: RecommendationHighlight; priceType: PlanRecommendation['plan']['priceType'] }) {

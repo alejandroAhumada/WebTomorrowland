@@ -14,9 +14,9 @@ const fields: Array<{ key: BudgetPreferenceKey; label: string; unit: string; mon
   { key: 'personalExpensesPerPerson', label: 'Gastos personales', unit: 'por persona', money: true },
 ]
 
-export function BudgetPreferencesEditor() {
+export function BudgetPreferencesEditor({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const { preferences, customized, updatePreference, resetPreferences } = useBudgetPreferences()
-  return <details className="budget-editor">
+  return <details className="budget-editor" open={defaultOpen || undefined}>
     <summary><span><SlidersHorizontal aria-hidden="true" /><strong>Ajustar mi presupuesto</strong></span>{customized && <em>Presupuesto personalizado</em>}</summary>
     <div className="budget-editor-content">
       <header><p>Estos ajustes se aplican a todas las alternativas en este dispositivo.</p><small>Tus valores se guardan solo en este navegador. Días y noches pueden configurarse de forma independiente.</small></header>

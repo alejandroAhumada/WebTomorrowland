@@ -16,6 +16,8 @@ Desde el detalle de cualquier plan, **Ajustar mi presupuesto** permite personali
 
 La Home calcula recomendaciones explicables para 1 o 2 personas sin persistir rankings: menor presupuesto completo por persona, menor precio Tomorrowland original BRL por persona y menor presupuesto entre planes con alojamiento incluido. Los planes `PENDING` o sin conversión requerida quedan fuera del criterio correspondiente. Cada criterio conserva su ganador real; cuando un plan gana varios, las fortalezas se agrupan en una sola card. Los empates se resuelven por métrica, precio Tomorrowland BRL por persona, nombre e ID. Las preferencias locales recalculan estos resultados inmediatamente.
 
+**Mi viaje** permite elegir una alternativa exclusivamente para planificación. Guarda solo el ID estable en `webtomorrowland:my-trip:v1`; nunca persiste precios, presupuestos ni snapshots del plan. En cada carga resuelve el documento actual mediante el repositorio y combina sus datos vigentes con BCCh, BudgetPreferences y el próximo Important Event global. La selección se sincroniza entre pestañas, funciona en memoria si el almacenamiento está bloqueado y se descarta si el plan deja de existir. No representa una compra, reserva ni entrada confirmada.
+
 ## Requisitos
 
 - Node.js 22

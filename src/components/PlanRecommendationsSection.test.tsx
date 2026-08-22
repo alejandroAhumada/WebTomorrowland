@@ -7,6 +7,7 @@ import { productionPlans } from '../../scripts/productionPlans'
 import { BudgetPreferencesProvider } from '../state/BudgetPreferencesContext'
 import { SelectionProvider } from '../state/SelectionContext'
 import { HomePage } from '../pages/HomePage'
+import { MyTripProvider } from '../state/MyTripContext'
 import { RecommendationCard } from './PlanRecommendationsSection'
 
 const plan = productionPlans.find((item) => item.id === 'easy-tent-2p-2027')!
@@ -29,7 +30,7 @@ describe('sección de recomendaciones', () => {
   })
 
   it('Home incluye selector accesible, loading e indicador personalizado', () => {
-    const markup = renderToStaticMarkup(<MemoryRouter><BudgetPreferencesProvider initialPreferences={{ ...defaultBudgetPreferences, flightPerPerson: 520000 }}><SelectionProvider><HomePage /></SelectionProvider></BudgetPreferencesProvider></MemoryRouter>)
+    const markup = renderToStaticMarkup(<MemoryRouter><BudgetPreferencesProvider initialPreferences={{ ...defaultBudgetPreferences, flightPerPerson: 520000 }}><MyTripProvider initialPlanId={null}><SelectionProvider><HomePage /></SelectionProvider></MyTripProvider></BudgetPreferencesProvider></MemoryRouter>)
     expect(markup).toContain('¿Qué opción te conviene mirar primero?')
     expect(markup).toContain('aria-label="Cantidad de viajeros"')
     expect(markup).toContain('aria-pressed="true"')

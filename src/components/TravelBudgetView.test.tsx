@@ -11,10 +11,11 @@ import { PlanDetailDialog } from './PlanDetailDialog'
 import { TravelBudgetBreakdown, TravelBudgetSummary } from './TravelBudgetView'
 import { BudgetPreferencesProvider } from '../state/BudgetPreferencesContext'
 import { defaultBudgetPreferences } from '../data/travelBudgetEstimates'
+import { MyTripProvider } from '../state/MyTripContext'
 
 const plan = demoPlans.find((item) => item.travelerCount === 1)!
 const budget = createTravelBudget(plan, initialTravelBudgetEstimates)
-const renderBudgetUi = (node: ReactNode, personalized = false) => renderToStaticMarkup(<BudgetPreferencesProvider initialPreferences={personalized ? { ...defaultBudgetPreferences, flightPerPerson: 520000 } : defaultBudgetPreferences}>{node}</BudgetPreferencesProvider>)
+const renderBudgetUi = (node: ReactNode, personalized = false, myPlanId: string | null = null) => renderToStaticMarkup(<BudgetPreferencesProvider initialPreferences={personalized ? { ...defaultBudgetPreferences, flightPerPerson: 520000 } : defaultBudgetPreferences}><MyTripProvider initialPlanId={myPlanId}>{node}</MyTripProvider></BudgetPreferencesProvider>)
 
 describe('representación del presupuesto', () => {
   it('la card muestra solo el resumen y mantiene Comparar independiente', () => {
