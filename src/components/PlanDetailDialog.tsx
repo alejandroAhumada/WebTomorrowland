@@ -7,6 +7,7 @@ import { useTravelBudget } from '../hooks/useTravelBudget'
 import { ClpConversion } from './ClpConversion'
 import { PriceBadge } from './PriceBadge'
 import { TravelBudgetBreakdown } from './TravelBudgetView'
+import { BudgetPreferencesEditor } from './BudgetPreferencesEditor'
 
 export function PlanDetailDialog({ plan, onClose }: { plan: TravelPlan; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -27,6 +28,7 @@ export function PlanDetailDialog({ plan, onClose }: { plan: TravelPlan; onClose:
       <header className="detail-heading"><p className="eyebrow">Detalle del plan</p><h2 id="plan-detail-title">{plan.name}</h2><p><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</p></header>
       <section className="detail-price" aria-label="Precio Tomorrowland"><div><span>Precio Tomorrowland</span>{plan.totalPrice ? <><strong>{formatMoney(plan.totalPrice)}</strong><ClpConversion money={plan.totalPrice} />{perPerson && <small>{formatMoney(perPerson)} por persona</small>}</> : <><strong>Precio pendiente</strong><small>Aún no publicado por Tomorrowland</small></>}</div><PriceBadge type={plan.priceType} /></section>
       <TravelBudgetBreakdown budget={budget} loading={budgetLoading} />
+      <BudgetPreferencesEditor />
       <div className="detail-features"><DetailList title="Incluye" items={plan.inclusions} included /><DetailList title="No incluido" items={plan.notIncluded} /></div>
       {plan.sources.map((source) => source.url ? <a className="detail-source" key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.type === 'OFFICIAL' ? 'Fuente oficial' : source.label}<ArrowUpRight aria-hidden="true" /></a> : null)}
     </div>

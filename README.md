@@ -12,6 +12,8 @@ Las estimaciones iniciales viven en `src/data/travelBudgetEstimates.ts` y supone
 
 El componente Tomorrowland se convierte dinámicamente a CLP mediante la tasa BCCh existente. Los gastos `PER_PERSON` se multiplican por `travelerCount`; los gastos `PER_GROUP` se agregan una sola vez. Si el precio del plan, la tasa o cualquier componente es desconocido, el desglose conserva los valores conocidos pero el total y el total por persona permanecen pendientes: nunca se suma un importe desconocido como cero.
 
+Desde el detalle de cualquier plan, **Ajustar mi presupuesto** permite personalizar duración y todos los supuestos estimados. Las preferencias se aplican globalmente a cards, detalles y comparador, se validan antes de usarse y se guardan solo en el navegador bajo `webtomorrowland:budget-preferences:v1`. El botón **Restablecer estimaciones** elimina la personalización y recupera la fuente única de defaults. Los límites actuales son 1–30 días, 0–30 noches y valores monetarios enteros entre CLP 0 y máximos amplios definidos por categoría; los valores inválidos muestran feedback y nunca se corrigen silenciosamente.
+
 ## Requisitos
 
 - Node.js 22
