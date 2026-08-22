@@ -4,6 +4,14 @@ MVP público para explorar y comparar alternativas de viaje a Tomorrowland Brasi
 
 La aplicación permite revisar planes para una o dos personas y comparar hasta tres alternativas. Los datos incluidos son demostrativos y todos sus precios están identificados como `ESTIMATED`.
 
+## Presupuesto completo del viaje
+
+Cada plan conserva su precio Tomorrowland original y añade un presupuesto independiente en CLP para responder cuánto costaría aproximadamente el viaje completo. El cálculo centralizado combina Tomorrowland, vuelo, transporte local, alimentación y gastos personales; cards, detalle y comparador consumen el mismo modelo.
+
+Las estimaciones iniciales viven en `src/data/travelBudgetEstimates.ts`: vuelo SCL ↔ São Paulo `$400.000` por persona, transporte local `$120.000` por grupo, alimentación `$180.000` por persona y gastos personales `$150.000` por persona. Son referencias configurables, versionadas y marcadas siempre como `ESTIMATED`; no provienen de Tomorrowland ni se almacenan en `plans`. Esta alternativa local mantiene el MVP simple y permite sustituir luego la configuración por un repositorio Firestore sin cambiar los componentes.
+
+El componente Tomorrowland se convierte dinámicamente a CLP mediante la tasa BCCh existente. Los gastos `PER_PERSON` se multiplican por `travelerCount`; los gastos `PER_GROUP` se agregan una sola vez. Si el precio del plan, la tasa o cualquier componente es desconocido, el desglose conserva los valores conocidos pero el total y el total por persona permanecen pendientes: nunca se suma un importe desconocido como cero.
+
 ## Requisitos
 
 - Node.js 22

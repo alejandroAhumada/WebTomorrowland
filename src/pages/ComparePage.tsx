@@ -1,11 +1,14 @@
-import { ArrowRight, Check, CircleMinus, Columns3, Hotel, Plane, TentTree, Ticket, Trash2, X } from 'lucide-react'
+import { ArrowRight, Bus, Check, CircleMinus, Coins, Columns3, Hotel, Plane, TentTree, Ticket, Trash2, Utensils, WalletCards, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { ClpConversion } from '../components/ClpConversion'
 import { PriceBadge } from '../components/PriceBadge'
 import { usePlans } from '../hooks/usePlans'
+import { useTravelBudget } from '../hooks/useTravelBudget'
 import { getPricePerPerson, type TravelPlan } from '../models/plan'
+import type { BudgetCategory } from '../models/travelBudget'
+import { budgetItemTotalMoney } from '../models/travelBudget'
 import { useSelection } from '../state/useSelection'
 import { formatMoney } from '../utils/format'
 
@@ -25,6 +28,13 @@ function DesktopComparison({ plans, onRemove }: { plans: TravelPlan[]; onRemove:
   return <div className="comparison-scroll compare-desktop"><table className="comparison-table"><thead><tr><th scope="col">Comparar</th>{plans.map((plan) => <th scope="col" key={plan.id}><PlanHeading plan={plan} onRemove={onRemove} /></th>)}</tr></thead><tbody>
     <Row icon={<Ticket />} label="Precio total" plans={plans} render={(plan) => plan.totalPrice ? <div className="compare-price"><strong>{formatMoney(plan.totalPrice)}</strong><ClpConversion money={plan.totalPrice} compact /></div> : 'Pendiente de publicación'} />
     <Row label="Por persona" plans={plans} render={(plan) => { const price = getPricePerPerson(plan); return price ? formatMoney(price) : 'Pendiente' }} />
+    <Row icon={<Coins />} label="Presupuesto completo estimado" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} field="total" />} />
+    <Row label="Presupuesto por persona" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} field="perPerson" />} />
+    <Row icon={<Ticket />} label="Tomorrowland (CLP ref.)" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="TOMORROWLAND" />} />
+    <Row icon={<Plane />} label="Vuelo" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="FLIGHT" />} />
+    <Row icon={<Bus />} label="Transporte local" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="LOCAL_TRANSPORT" />} />
+    <Row icon={<Utensils />} label="Alimentación" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="FOOD" />} />
+    <Row icon={<WalletCards />} label="Gastos personales" plans={plans} render={(plan) => <BudgetCompareValue plan={plan} category="PERSONAL_EXPENSES" />} />
     <Row icon={<Hotel />} label="Alojamiento" plans={plans} render={(plan) => plan.accommodation} />
     <Row icon={<Plane />} label="Transporte" plans={plans} render={(plan) => plan.transport} />
     <Row icon={<Ticket />} label="Festival / entrada" plans={plans} render={(plan) => plan.festivalPass} />
@@ -41,6 +51,7 @@ function MobileComparison({ plans, onRemove }: { plans: TravelPlan[]; onRemove: 
     const perPerson = getPricePerPerson(plan)
     return <article className="mobile-compare-card" key={plan.id}><PlanHeading plan={plan} onRemove={onRemove} />
       <div className="mobile-price">{plan.totalPrice ? <><strong>{formatMoney(plan.totalPrice)}</strong><ClpConversion money={plan.totalPrice} compact />{perPerson && <span>{formatMoney(perPerson)} por persona</span>}</> : <strong>Precio pendiente</strong>}</div>
+      <MobileBudgetComparison plan={plan} />
       <CompareFact icon={<Hotel />} label="Alojamiento" value={plan.accommodation} />
       <CompareFact icon={<Plane />} label="Transporte" value={plan.transport} />
       <CompareFact icon={<Ticket />} label="Festival" value={plan.festivalPass} />
@@ -51,6 +62,23 @@ function MobileComparison({ plans, onRemove }: { plans: TravelPlan[]; onRemove: 
     </article>
   })}</div>
 }
+
+export function BudgetCompareValue({ plan, field, category }: { plan: TravelPlan; field?: 'total' | 'perPerson'; category?: BudgetCategory }) {
+  const { budget, loading } = useTravelBudget(plan)
+  if (loading) return <span className="budget-compare muted">Calculando…</span>
+  if (field === 'total') return <span className="budget-compare">{budget.total ? `≈ ${formatMoney(budget.total)}` : 'Pendiente de precio Tomorrowland'}</span>
+  if (field === 'perPerson') return <span className="budget-compare emphasis">{budget.totalPerPerson ? `≈ ${formatMoney(budget.totalPerPerson)}` : 'Pendiente'}</span>
+  const item = budget.items.find((candidate) => candidate.category === category)
+  const money = item ? budgetItemTotalMoney(item) : null
+  return <span className="budget-compare">{money ? formatMoney(money) : 'Pendiente'}</span>
+}
+
+function MobileBudgetComparison({ plan }: { plan: TravelPlan }) {
+  const { budget, loading } = useTravelBudget(plan)
+  return <section className="mobile-budget"><h3><Coins aria-hidden="true" />Presupuesto completo estimado</h3>{loading ? <p>Calculando…</p> : <><dl>{budget.items.map((item) => { const money = budgetItemTotalMoney(item); return <div key={item.category}><dt>{mobileBudgetLabels[item.category]}</dt><dd>{money ? formatMoney(money) : 'Pendiente'}</dd></div> })}</dl><div className="mobile-budget-total"><span>Total</span><strong>{budget.total ? `≈ ${formatMoney(budget.total)}` : 'Pendiente'}</strong><span>Por persona</span><strong>{budget.totalPerPerson ? `≈ ${formatMoney(budget.totalPerPerson)}` : 'Pendiente'}</strong></div></>}</section>
+}
+
+const mobileBudgetLabels: Record<BudgetCategory, string> = { TOMORROWLAND: 'Tomorrowland', FLIGHT: 'Vuelo', LOCAL_TRANSPORT: 'Transporte', FOOD: 'Alimentación', PERSONAL_EXPENSES: 'Gastos personales' }
 
 function PlanHeading({ plan, onRemove }: { plan: TravelPlan; onRemove: (id: string) => void }) {
   return <div className="compare-plan-heading"><span>{plan.name}</span><small>{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</small><button type="button" onClick={() => onRemove(plan.id)} aria-label={`Quitar ${plan.name}`}><X aria-hidden="true" />Quitar</button></div>
