@@ -74,7 +74,17 @@ npm run seed:events
 GOOGLE_APPLICATION_CREDENTIALS=/ruta/segura/service-account.json npm run seed:events:write
 ```
 
-Ambos comandos validan IDs, fechas y hostnames oficiales; el segundo usa escrituras idempotentes con IDs estables y relee cada documento. La escritura pública continúa bloqueada. En una fase futura el Research Agent podrá proponer acontecimientos a través de una barrera administrativa dedicada, pero V1 no le concede acceso Firestore ni amplía WIF/IAM.
+Ambos comandos validan IDs, fechas y hostnames oficiales; el segundo usa escrituras idempotentes con IDs estables y relee cada documento. La escritura pública continúa bloqueada. El seed permanece disponible solo para bootstrap/manual; la actualización periódica utiliza la barrera privada descrita a continuación.
+
+## Tomorrowland Important Events Sync API
+
+`syncTomorrowlandEvent` es una Function HTTP 2nd gen privada, independiente del frontend, que acepta una propuesta `CREATE` o `UPDATE` sobre `importantEvents`. El contrato exige `proposalId`, `eventId` semántico, `observedAt`, fuente oficial, cambios permitidos y evidencia pequeña con hash. Solo admite HTTPS con hostname exacto oficial y rechaza campos desconocidos, edición incorrecta, fechas inválidas, regresiones temporales y `DELETE`.
+
+La creación automática requiere fecha explícita, categoría importante permitida y evidencia inequívoca de Tomorrowland Brasil 2027. Una fecha u hora existente solo cambia con evidencia explícita de reprogramación; una hora no desaparece por fallo de extracción. `CANCELLED` exige texto oficial de cancelación, la ausencia en una página nunca cancela ni elimina, y un evento cancelado no se reactiva automáticamente.
+
+El flujo obligatorio es `?dryRun=true`; solo `CREATED` o `UPDATED` puede reenviarse en modo real. La transacción real mantiene atómicamente `importantEvents/{eventId}`, `eventSyncProposals/{proposalId}`, `eventSyncState/{eventId}`, `syncRuns/tomorrowland_event_{proposalId}` y, únicamente ante cambio, `importantEvents/{eventId}/history/{proposalId}`. Un payload repetido devuelve `ALREADY_PROCESSED`; reutilizar el ID con otro payload se rechaza. Ninguna colección administrativa ni historial tiene lectura pública.
+
+La Function reutiliza el runtime mínimo `tomorrowland-sync-api` y solo `tomorrowland-sync-client` tiene `roles/run.invoker` sobre el servicio. El workflow manual **Deploy Tomorrowland Sync API** permite elegir explícitamente qué Function desplegar y conserva el despliegue separado de Hosting y BCCh.
 
 ## Tomorrowland Plan Sync API
 
@@ -141,7 +151,7 @@ Nunca copies la clave dentro del proyecto. El script apunta explícitamente a `w
 
 ## Tomorrowland Official Research Agent
 
-El investigador específico de Tomorrowland Brasil 2027 se ejecuta en GitHub Actions, separado del frontend, del sincronizador BCCh y de Firebase Admin. Cada ocho horas (`17 */8 * * *`, UTC) descarga únicamente las ocho fuentes oficiales configuradas en `scripts/tomorrowlandResearch.ts`, extrae evidencia pequeña, genera IDs deterministas y envía propuestas exclusivamente a Tomorrowland Sync API. No tiene acceso directo a Firestore y no crea ni elimina planes.
+El investigador específico de Tomorrowland Brasil 2027 se ejecuta en GitHub Actions, separado del frontend, del sincronizador BCCh y de Firebase Admin. Cada ocho horas (`17 */8 * * *`, UTC) procesa planes y acontecimientos. Descarga únicamente fuentes oficiales configuradas en `scripts/tomorrowlandResearch.ts` y `scripts/tomorrowlandEventResearch.ts`, extrae evidencia pequeña, genera IDs deterministas y envía propuestas a la Sync API correspondiente. No tiene acceso directo a Firestore; no crea ni elimina planes y nunca elimina acontecimientos.
 
 La primera versión es determinista y no utiliza OpenAI. Los precios solo se extraen cuando un encabezado de producto exacto tiene un único importe BRL asociado en el HTML semántico. Se monitorizan directamente `Full Madness Pass` 1P, `Vida Nova 2P`, `Easy Tent 2P` y `Spectacular Easy Tent 2P`. `full-madness-2p-2027` conserva `ESTIMATED`: nunca se convierte en oficial por multiplicar el ticket unitario. Los Global Journey permanecen sin propuesta hasta que la fuente publique un precio inequívoco asociado explícitamente a ocupación 1P o 2P.
 
@@ -149,11 +159,13 @@ El fetch exige HTTPS y hostname exacto `tomorrowland.com`, `www.tomorrowland.com
 
 ```text
 fuente oficial -> evidencia -> propuesta -> Sync API dry-run
-                                      UPDATED -> misma propuesta real
+                                      CREATED/UPDATED -> misma propuesta real
                                       NO_CHANGE/REJECTED/error -> no escribir
 ```
 
-La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas cuyo resultado sea `UPDATED`. El cron utiliza el flujo completo. Los logs muestran fuente, hash abreviado, plan, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. `Research scope` permite elegir `all`, `plans` o `events`. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas aceptadas. El cron usa `all` y el flujo completo. Los logs muestran fuente, hash abreviado, entidad, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+
+La extracción de acontecimientos es determinista y se centra en fechas de ventas y el festival. Reconoce pre-registro, simuladores, ventas, preventas y festival; un hito nuevo solo se crea si tiene nombre, fecha BRT inequívoca y categoría accionable. Cambios editoriales menores y desapariciones se ignoran. Para agregar una categoría o fuente, amplía primero la allowlist/modelo, añade un extractor acotado y fixtures de éxito, ambigüedad, otra edición y ausencia; no conviertas el módulo en un crawler general.
 
 GitHub se autentica sin claves mediante OIDC y Workload Identity Federation, impersonando `tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com`. Configura la variable `GCP_TOMORROWLAND_RESEARCH_WIF_PROVIDER` con el nombre completo del provider, por ejemplo `projects/672021161403/locations/global/workloadIdentityPools/POOL/providers/PROVIDER`. El provider debe restringir `repository == 'alejandroAhumada/WebTomorrowland'`, y solo ese principal debe tener `roles/iam.workloadIdentityUser` sobre la cuenta caller. No se requiere `OPENAI_API_KEY`, service-account JSON ni permiso Firestore.
 
@@ -173,7 +185,8 @@ src/
 functions/
 └── src/         Sync API, reglas de propuestas y adaptador administrativo Firestore
 scripts/
-└── tomorrowlandResearch.ts  Fetch, extracción, evidencia y cliente Sync API
+├── tomorrowlandResearch.ts       Fetch compartido e investigación de planes
+└── tomorrowlandEventResearch.ts  Eventos, evidencia y cliente Event Sync API
 ```
 
 `firebase.json` configura Firebase Hosting como SPA y `firestore.rules` mantiene el acceso público en modo lectura. Los datos demo están en `src/data/demoPlans.ts`.

@@ -8,6 +8,7 @@ const eventIcons: Record<ImportantEventType, LucideIcon> = {
   REGISTRATION: Ticket,
   SIMULATOR: Calculator,
   SALE: ShoppingBag,
+  PRE_SALE: ShoppingBag,
   FESTIVAL: Sparkles,
   ANNOUNCEMENT: Megaphone,
 }
@@ -50,7 +51,7 @@ function TimelineEvent({ event, now, featured }: { event: ImportantEvent; now: D
 }
 
 function TemporalBadge({ state, ranged }: { state: ImportantEventState; ranged: boolean }) {
-  const label = state === 'UPCOMING' ? 'Próximo' : state === 'PAST' ? 'Finalizado' : ranged ? 'En curso' : 'Hoy'
+  const label = state === 'UPCOMING' ? 'Próximo' : state === 'PAST' ? 'Finalizado' : state === 'CANCELLED' ? 'Cancelado' : ranged ? 'En curso' : 'Hoy'
   return <span className={`temporal-badge ${state.toLowerCase()}`}>{label}</span>
 }
 

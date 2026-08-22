@@ -1,12 +1,13 @@
 import type { ImportantEvent } from '../models/importantEvent'
 
-export type ImportantEventState = 'UPCOMING' | 'TODAY' | 'PAST'
+export type ImportantEventState = 'UPCOMING' | 'TODAY' | 'PAST' | 'CANCELLED'
 
 export function sortImportantEvents(events: readonly ImportantEvent[]): ImportantEvent[] {
   return [...events].sort((left, right) => compareEventStarts(left, right) || right.priority - left.priority || left.title.localeCompare(right.title, 'es'))
 }
 
 export function getImportantEventState(event: ImportantEvent, now = new Date()): ImportantEventState {
+  if (event.status === 'CANCELLED') return 'CANCELLED'
   const today = civilDateInTimeZone(now, event.timeZone)
   const startDate = event.startsAt.slice(0, 10)
   const endDate = (event.endsAt ?? event.startsAt).slice(0, 10)
@@ -17,7 +18,7 @@ export function getImportantEventState(event: ImportantEvent, now = new Date()):
 }
 
 export function getNextImportantEvent(events: readonly ImportantEvent[], now = new Date()): ImportantEvent | null {
-  const active = sortImportantEvents(events).filter((event) => getImportantEventState(event, now) !== 'PAST')
+  const active = sortImportantEvents(events).filter((event) => !['PAST', 'CANCELLED'].includes(getImportantEventState(event, now)))
   return active.find((event) => getImportantEventState(event, now) === 'TODAY') ?? active[0] ?? null
 }
 

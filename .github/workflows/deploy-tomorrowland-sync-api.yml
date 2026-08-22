@@ -2,6 +2,13 @@ name: Deploy Tomorrowland Sync API
 
 on:
   workflow_dispatch:
+    inputs:
+      function_name:
+        description: Private Sync API function to deploy
+        required: true
+        type: choice
+        options: [syncTomorrowlandEvent, syncTomorrowlandPlan]
+        default: syncTomorrowlandEvent
 
 permissions:
   contents: read
@@ -30,4 +37,4 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FUNCTIONS_DEPLOY }}
           project_id: web-pack-tomorrowland
       - name: Deploy private 2nd gen function
-        run: npx --yes firebase-tools@15.28.1 deploy --only functions:tomorrowland-sync:syncTomorrowlandPlan --project web-pack-tomorrowland --non-interactive
+        run: npx --yes firebase-tools@15.28.1 deploy --only functions:tomorrowland-sync:${{ inputs.function_name }} --project web-pack-tomorrowland --non-interactive
