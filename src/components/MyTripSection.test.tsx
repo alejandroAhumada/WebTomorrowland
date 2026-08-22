@@ -8,7 +8,8 @@ import { initialImportantEvents } from '../data/importantEvents'
 import { BudgetPreferencesProvider } from '../state/BudgetPreferencesContext'
 import { MyTripProvider } from '../state/MyTripContext'
 import { SelectionProvider } from '../state/SelectionContext'
-import { MyTripDashboard } from './MyTripSection'
+import { TripPreparationProvider } from '../state/TripPreparationContext'
+import { MyTripDashboard, MyTripSection } from './MyTripSection'
 import { PlanCard } from './PlanCard'
 import { PlanDetailDialog } from './PlanDetailDialog'
 import { RecommendationCard } from './PlanRecommendationsSection'
@@ -17,9 +18,10 @@ import { productionPlans } from '../../scripts/productionPlans'
 
 const plan = demoPlans[0]
 
-function renderUi(node: ReactNode, options: { selectedId?: string | null; personalized?: boolean } = {}) {
+function renderUi(node: ReactNode, options: { selectedId?: string | null; personalized?: boolean; completedTaskIds?: string[] } = {}) {
   const preferences = options.personalized ? { ...defaultBudgetPreferences, flightPerPerson: 520000 } : defaultBudgetPreferences
-  return renderToStaticMarkup(<MemoryRouter><BudgetPreferencesProvider initialPreferences={preferences}><MyTripProvider initialPlanId={options.selectedId ?? plan.id}><SelectionProvider>{node}</SelectionProvider></MyTripProvider></BudgetPreferencesProvider></MemoryRouter>)
+  const initialState = { plans: { [plan.id]: Object.fromEntries((options.completedTaskIds ?? []).map((taskId) => [taskId, { completed: true as const, completedAt: '2026-08-22T18:00:00.000Z' }])) } }
+  return renderToStaticMarkup(<MemoryRouter><BudgetPreferencesProvider initialPreferences={preferences}><TripPreparationProvider initialState={initialState}><MyTripProvider initialPlanId={options.selectedId !== undefined ? options.selectedId : plan.id}><SelectionProvider>{node}</SelectionProvider></MyTripProvider></TripPreparationProvider></BudgetPreferencesProvider></MemoryRouter>)
 }
 
 describe('Mi viaje en la interfaz', () => {
@@ -28,11 +30,41 @@ describe('Mi viaje en la interfaz', () => {
     expect(markup).toContain('Mi viaje')
     expect(markup).toContain(plan.name)
     expect(markup).toContain('Mi ruta a Tomorrowland')
+    expect(markup).toContain('Mi preparación')
+    expect(markup).toContain('0 de 7 completados')
     expect(markup).toContain('Hito principal en curso')
     expect(markup).toContain('Ver mi plan')
     expect(markup).toContain('Ajustar presupuesto')
     expect(markup).toContain('Comparar')
     expect(markup).toContain('no representa una reserva, compra ni entrada confirmada')
+  })
+
+  it('muestra progreso personal, checkbox accesible y estado completado', () => {
+    const markup = renderUi(<MyTripDashboard plan={plan} events={[]} />, { completedTaskIds: ['flight', 'documentation'] })
+    expect(markup).toContain('2 de 7 completados')
+    expect(markup).toContain('aria-valuenow="2"')
+    expect(markup).toContain('checked=""')
+    expect(markup).toContain('Restablecer preparación')
+    expect(markup).toContain('Tu organización personal')
+  })
+
+  it('muestra preparación completada al 100% y no aparece sin MyTrip', () => {
+    const allTasks = ['documentation', 'flight', 'travel-insurance', 'local-transport', 'payment-method', 'luggage', 'flight-check-in']
+    const completed = renderUi(<MyTripDashboard plan={plan} events={[]} />, { completedTaskIds: allTasks })
+    expect(completed).toContain('Preparación completada')
+    expect(completed).toContain('aria-valuenow="7"')
+    expect(renderUi(<MyTripSection />, { selectedId: null })).not.toContain('Mi preparación')
+  })
+
+  it('agrega alojamiento a Full Madness y lo excluye de Easy Tent y Global Journey PENDING', () => {
+    const fullMadness = productionPlans.find((item) => item.id === 'full-madness-1p-2027')!
+    const easyTent = productionPlans.find((item) => item.id === 'easy-tent-2p-2027')!
+    const pendingJourney = productionPlans.find((item) => item.id === 'global-journey-hotel-1p-2027')!
+    expect(renderUi(<MyTripDashboard plan={fullMadness} events={[]} />)).toContain('Reservar alojamiento externo')
+    expect(renderUi(<MyTripDashboard plan={easyTent} events={[]} />)).not.toContain('Reservar alojamiento externo')
+    const pendingMarkup = renderUi(<MyTripDashboard plan={pendingJourney} events={[]} />)
+    expect(pendingMarkup).not.toContain('Reservar alojamiento externo')
+    expect(pendingMarkup).toContain('Comprar vuelos')
   })
 
   it('recalcula con BudgetPreferences y muestra el indicador personalizado', () => {

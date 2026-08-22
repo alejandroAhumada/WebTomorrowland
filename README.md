@@ -20,6 +20,8 @@ La Home calcula recomendaciones explicables para 1 o 2 personas sin persistir ra
 
 **Mi ruta a Tomorrowland** deriva una cronología desde la aplicabilidad estructurada de cada evento: `ALL`, `PLAN_CATEGORIES` o, solo para excepciones, `PLAN_IDS`. No copia fechas al navegador ni infiere relevancia desde nombres. El Research Agent solo puede proponer `appliesTo` cuando la fuente oficial demuestra la relación, y Event Sync API valida el campo antes de escribirlo.
 
+**Mi preparación** es una checklist personal, separada visual y semánticamente de los hitos oficiales. Sus definiciones se derivan localmente desde datos estructurados del plan; por ejemplo, alojamiento externo solo aparece cuando el paquete no lo incluye. El navegador persiste exclusivamente progreso por plan en `webtomorrowland:trip-preparation:v1`, nunca títulos, planes ni datos oficiales. No utiliza Firestore, Research Agent ni Sync APIs.
+
 ## Requisitos
 
 - Node.js 22

@@ -5,5 +5,6 @@ import { App } from './App'
 import { SelectionProvider } from './state/SelectionContext'
 import { BudgetPreferencesProvider } from './state/BudgetPreferencesContext'
 import { MyTripProvider } from './state/MyTripContext'
+import { TripPreparationProvider } from './state/TripPreparationContext'
 import './styles.css'
-createRoot(document.getElementById('root')!).render(<StrictMode><BrowserRouter><BudgetPreferencesProvider><MyTripProvider><SelectionProvider><App /></SelectionProvider></MyTripProvider></BudgetPreferencesProvider></BrowserRouter></StrictMode>)
+createRoot(document.getElementById('root')!).render(<StrictMode><BrowserRouter><BudgetPreferencesProvider><TripPreparationProvider><MyTripProvider><SelectionProvider><App /></SelectionProvider></MyTripProvider></TripPreparationProvider></BudgetPreferencesProvider></BrowserRouter></StrictMode>)
