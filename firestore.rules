@@ -4,6 +4,7 @@ service cloud.firestore {
     match /plans/{planId} { allow read: if true; allow write: if false; }
     match /plans/{planId}/history/{historyId} { allow read, write: if false; }
     match /exchangeRates/{pairId} { allow read: if true; allow write: if false; }
+    match /importantEvents/{eventId} { allow read: if true; allow write: if false; }
     match /planSyncProposals/{proposalId} { allow read, write: if false; }
     match /planSyncState/{planId} { allow read, write: if false; }
     match /syncRuns/{runId} { allow read, write: if false; }

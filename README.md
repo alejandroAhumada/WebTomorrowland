@@ -43,7 +43,7 @@ Para trabajar con los datos demo sin consultar Firebase, usa `VITE_DATA_SOURCE=d
 VITE_DATA_SOURCE=demo npm run dev
 ```
 
-Las colecciones esperadas son `plans` y `exchangeRates`. Cada plan utiliza `TravelPlan`; las tasas se identifican por pares estables como `BRL_CLP`. Las reglas incluidas permiten lectura pública y bloquean todas las escrituras del cliente. Si una tasa no está disponible, la aplicación conserva el precio original y omite la conversión sin bloquear los planes.
+Las colecciones públicas esperadas son `plans`, `exchangeRates` e `importantEvents`. Cada plan utiliza `TravelPlan`; las tasas se identifican por pares estables como `BRL_CLP`. Las reglas incluidas permiten lectura pública y bloquean todas las escrituras del cliente. Si una tasa no está disponible, la aplicación conserva el precio original y omite la conversión sin bloquear los planes.
 
 ## Dataset de producción
 
@@ -62,6 +62,19 @@ Configura estos GitHub Actions Secrets:
 La cuenta de Firestore no necesita permisos de Hosting ni administración IAM. Ningún Secret llega al frontend, a Firestore o a artefactos. El workflow también puede ejecutarse desde **Actions → Sync BCCh exchange rate → Run workflow**. Sus resultados posibles son `UPDATED`, `NO_CHANGE`, `CORRECTION`, `STALE_SOURCE` y `FAILED`; cada ejecución crea un documento administrativo en `syncRuns`, colección que no tiene lectura pública.
 
 `observedAt` es la fecha publicada por BCCh. `fetchedAt` identifica cuándo se obtuvo la observación actualmente almacenada y `updatedAt` cuándo se escribió ese estado; ambos cambian solamente en `UPDATED` o `CORRECTION`. Las ejecuciones sin cambios se trazan en `syncRuns`. Verifica la última ejecución en GitHub Actions y, administrativamente, en las colecciones `syncRuns` y `exchangeRates` de Firestore.
+
+## Novedades y fechas clave
+
+La Home consulta `importantEvents` mediante la misma abstracción local/Firestore usada por el resto del frontend. El modelo conserva fecha u hora oficial, zona `America/Sao_Paulo`, tipo, prioridad y trazabilidad. Los estados `UPCOMING`, `TODAY` y `PAST`, el próximo hito y los días restantes se calculan en el navegador; no se persisten.
+
+El bootstrap manual es independiente del seed de planes y no elimina documentos desconocidos:
+
+```bash
+npm run seed:events
+GOOGLE_APPLICATION_CREDENTIALS=/ruta/segura/service-account.json npm run seed:events:write
+```
+
+Ambos comandos validan IDs, fechas y hostnames oficiales; el segundo usa escrituras idempotentes con IDs estables y relee cada documento. La escritura pública continúa bloqueada. En una fase futura el Research Agent podrá proponer acontecimientos a través de una barrera administrativa dedicada, pero V1 no le concede acceso Firestore ni amplía WIF/IAM.
 
 ## Tomorrowland Plan Sync API
 

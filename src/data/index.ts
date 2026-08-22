@@ -2,6 +2,8 @@ import type { PlanRepository } from './PlanRepository'
 import type { ExchangeRateRepository } from './ExchangeRateRepository'
 import { LocalPlanRepository } from './LocalPlanRepository'
 import { LocalExchangeRateRepository } from './LocalExchangeRateRepository'
+import type { ImportantEventRepository } from './ImportantEventRepository'
+import { LocalImportantEventRepository } from './LocalImportantEventRepository'
 
 class ConfiguredPlanRepository implements PlanRepository {
   private delegate?: Promise<PlanRepository>
@@ -49,3 +51,20 @@ class ConfiguredExchangeRateRepository implements ExchangeRateRepository {
 }
 
 export const exchangeRateRepository: ExchangeRateRepository = new ConfiguredExchangeRateRepository()
+
+class ConfiguredImportantEventRepository implements ImportantEventRepository {
+  private delegate?: Promise<ImportantEventRepository>
+
+  private getDelegate(): Promise<ImportantEventRepository> {
+    if (!this.delegate) {
+      this.delegate = import.meta.env.VITE_DATA_SOURCE === 'firestore'
+        ? import('./FirestoreImportantEventRepository').then(({ FirestoreImportantEventRepository }) => new FirestoreImportantEventRepository())
+        : Promise.resolve(new LocalImportantEventRepository())
+    }
+    return this.delegate
+  }
+
+  async getAll() { return (await this.getDelegate()).getAll() }
+}
+
+export const importantEventRepository: ImportantEventRepository = new ConfiguredImportantEventRepository()
