@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react'
 import { useExchangeRate } from '../hooks/useExchangeRate'
 import { convertMoney } from '../models/exchangeRate'
 import type { Money } from '../models/plan'
@@ -18,6 +19,6 @@ function ForeignCurrencyConversion({ money, compact }: { money: Money; compact: 
   return <span className={`clp-conversion ${compact ? 'compact' : ''}`}>
     <strong>≈ {formatMoney(converted)} CLP</strong>
     <span>Conversión referencial</span>
-    {!compact && <small>1 {rate.fromCurrency} ≈ {formatMoney({ amount: rate.rate, currency: 'CLP' })} CLP · cotización {formatDate(rate.observedAt)} · <a href={rate.sourceUrl} target="_blank" rel="noreferrer">{rate.sourceName}</a> · serie {rate.sourceSeries}</small>}
+    {!compact && <small className="rate-note"><Info aria-hidden="true" />Tasa {rate.sourceName} · {formatDate(rate.observedAt)}<span className="rate-detail">1 {rate.fromCurrency} ≈ {formatMoney({ amount: rate.rate, currency: 'CLP' })} CLP · <a href={rate.sourceUrl} target="_blank" rel="noreferrer">ver fuente</a></span></small>}
   </span>
 }
