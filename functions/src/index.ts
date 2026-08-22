@@ -18,7 +18,7 @@ export const syncTomorrowlandPlan = onRequest({
   maxInstances: 3,
   concurrency: 10,
   serviceAccount: runtimeServiceAccount,
-  invoker: [`serviceAccount:${callerServiceAccount}`],
+  invoker: [callerServiceAccount],
 }, async (request, response) => {
   if (request.method !== 'POST') {
     response.set('Allow', 'POST').status(405).json({ error: 'METHOD_NOT_ALLOWED' })
