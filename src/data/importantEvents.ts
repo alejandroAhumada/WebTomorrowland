@@ -16,6 +16,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: salesSource,
     priority: 100,
     isFeatured: true,
+    appliesTo: { scope: 'ALL' },
     ...traceability,
   },
   {
@@ -28,6 +29,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: salesSource,
     priority: 95,
     isFeatured: true,
+    appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] },
     ...traceability,
   },
   {
@@ -40,6 +42,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: salesSource,
     priority: 90,
     isFeatured: true,
+    appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] },
     ...traceability,
   },
   {
@@ -52,6 +55,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: salesSource,
     priority: 70,
     isFeatured: false,
+    appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] },
     ...traceability,
   },
   {
@@ -64,6 +68,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: salesSource,
     priority: 85,
     isFeatured: true,
+    appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] },
     ...traceability,
   },
   {
@@ -77,6 +82,7 @@ export const initialImportantEvents: ImportantEvent[] = [
     sourceUrl: eventSource,
     priority: 100,
     isFeatured: true,
+    appliesTo: { scope: 'ALL' },
     ...traceability,
   },
 ]

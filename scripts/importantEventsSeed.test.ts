@@ -13,4 +13,10 @@ describe('buildImportantEventSeedDocuments', () => {
   it('rechaza IDs duplicados', () => {
     expect(() => buildImportantEventSeedDocuments([initialImportantEvents[0], initialImportantEvents[0]])).toThrow('duplicado')
   })
+
+  it('preserva la aplicabilidad validada en cada documento', () => {
+    const documents = buildImportantEventSeedDocuments(initialImportantEvents)
+    expect(documents.get('global-journey-sale-2027')).toMatchObject({ appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] } })
+    expect(documents.get('tomorrowland-brasil-2027')).toMatchObject({ appliesTo: { scope: 'ALL' } })
+  })
 })

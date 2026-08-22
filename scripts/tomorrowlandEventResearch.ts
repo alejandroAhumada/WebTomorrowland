@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { EventSyncProposal, EventSyncResponse } from '../functions/src/eventSync'
 import { initialImportantEvents } from '../src/data/importantEvents'
-import type { ImportantEvent, ImportantEventType } from '../src/models/importantEvent'
+import type { ImportantEvent, ImportantEventApplicability, ImportantEventType } from '../src/models/importantEvent'
 import {
   officialResearchUrl, sanitizeResearchError, type FetchedOfficialPage,
 } from './tomorrowlandResearch'
@@ -39,6 +39,7 @@ export interface DetectedImportantEvent {
   operation: 'CREATE' | 'UPDATE'
   evidenceKind: 'CREATE' | 'CONFIRMATION' | 'RESCHEDULE' | 'CANCELLATION'
   status?: 'CANCELLED'
+  appliesTo?: ImportantEventApplicability
 }
 
 export interface EventSourceResearchResult {
@@ -77,6 +78,10 @@ export function researchEventSource(
     const proposals: EventSyncProposal[] = []
 
     for (const event of detected) {
+      if (!event.appliesTo) {
+        notes.push(`${event.eventId}: no se propuso porque la fuente no demuestra su aplicabilidad a planes existentes.`)
+        continue
+      }
       const known = knownEvents.get(event.eventId)
       if (known && datesDiffer(event, known) && event.evidenceKind === 'CONFIRMATION') {
         notes.push(`${event.eventId}: se detectó una fecha distinta sin evidencia explícita de reprogramación.`)
@@ -113,33 +118,37 @@ export function researchEventSource(
 
 export function detectSalesEvents(text: string, sourceUrl: string): DetectedImportantEvent[] {
   const events: DetectedImportantEvent[] = []
-  const patterns: Array<{ id: string; title: string; type: ImportantEventType; pattern: RegExp }> = [
+  const patterns: Array<{ id: string; title: string; type: ImportantEventType; appliesTo: ImportantEventApplicability; pattern: RegExp }> = [
     {
       id: 'global-journey-simulator-2027', title: 'Simulador Global Journey', type: 'SIMULATOR',
+      appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] },
       pattern: /(?:Global Journey[^.]{0,180})?(?:Price )?Simulator[^.]{0,180}?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+2026\s*(?:-|at)\s*\d{1,2}:\d{2}\s*BRT)/i,
     },
     {
       id: 'global-journey-sale-2027', title: 'Venta Global Journey', type: 'SALE',
+      appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] },
       pattern: /Global Journey(?:\s+Travel Packages)?\s+Sale(?:(?!Simulator)[^.]){0,180}?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+2026\s*(?:-|at)\s*\d{1,2}:\d{2}\s*BRT)/i,
     },
     {
       id: 'bybit-pre-sale-2027', title: 'Preventa exclusiva Bybit', type: 'PRE_SALE',
+      appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] },
       pattern: /(?:Exclusive\s+)?Bybit\s+Pre-Sale[^.]{0,180}?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+2026\s*(?:-|at)\s*\d{1,2}:\d{2}\s*BRT)/i,
     },
     {
       id: 'worldwide-ticket-sale-2027', title: 'Venta mundial de tickets', type: 'SALE',
+      appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] },
       pattern: /World(?:\s|-)?Wide\s+Ticket\s+Sale[^.]{0,180}?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+2026\s*(?:-|at)\s*\d{1,2}:\d{2}\s*BRT)/i,
     },
   ]
 
   const registration = text.match(/(?:pre-register\s+from|Pre-Registration[^.]{0,400}?from)\s+(April\s+30,\s+2026\s*(?:-|at)\s*10:00\s*BRT)[^.]{0,160}?until\s+(September\s+23,\s+2026\s*(?:-|at)\s*23:59\s*BRT)/i)
   if (registration) {
-    events.push(detectedKnown('pre-registration-2027', 'Pre-registro Tomorrowland Brasil 2027', 'REGISTRATION', registration[1], sourceUrl, registration[0], registration[2]))
+    events.push(detectedKnown('pre-registration-2027', 'Pre-registro Tomorrowland Brasil 2027', 'REGISTRATION', registration[1], sourceUrl, registration[0], { scope: 'ALL' }, registration[2]))
   }
 
   for (const definition of patterns) {
     const match = text.match(definition.pattern)
-    if (match) events.push(detectedKnown(definition.id, definition.title, definition.type, match[1], sourceUrl, match[0]))
+    if (match) events.push(detectedKnown(definition.id, definition.title, definition.type, match[1], sourceUrl, match[0], definition.appliesTo))
   }
 
   const cancellationLabels = [
@@ -156,6 +165,7 @@ export function detectSalesEvents(text: string, sourceUrl: string): DetectedImpo
       eventId, title: known.title, startsAt: known.startsAt, ...(known.endsAt ? { endsAt: known.endsAt } : {}),
       type: known.type, sourceUrl, excerpt, sourceHash: evidenceHash(excerpt), operation: 'UPDATE',
       evidenceKind: 'CANCELLATION', status: 'CANCELLED',
+      appliesTo: known.appliesTo,
     }
     const index = events.findIndex((event) => event.eventId === eventId)
     if (index >= 0) events[index] = replacement
@@ -177,6 +187,7 @@ export function detectFestivalEvent(text: string, sourceUrl: string): DetectedIm
     eventId: 'tomorrowland-brasil-2027', title: 'Tomorrowland Brasil 2027', startsAt: start,
     endsAt: end, type: 'FESTIVAL', sourceUrl, excerpt, sourceHash: evidenceHash(excerpt),
     operation: 'UPDATE', evidenceKind: evidenceKind(excerpt),
+    appliesTo: { scope: 'ALL' },
   }]
 }
 
@@ -196,6 +207,7 @@ export function parseOfficialDate(input: string): string {
 }
 
 export function buildEventProposal(event: DetectedImportantEvent, observedAt: string): EventSyncProposal {
+  if (!event.appliesTo) throw new Error('La evidencia oficial no permite determinar appliesTo.')
   const known = knownEvents.get(event.eventId)
   const changes: EventSyncProposal['changes'] = event.operation === 'CREATE'
     ? {
@@ -207,11 +219,13 @@ export function buildEventProposal(event: DetectedImportantEvent, observedAt: st
         type: event.type,
         priority: defaultPriority(event.type),
         isFeatured: event.type !== 'ANNOUNCEMENT',
+        appliesTo: event.appliesTo,
       }
     : {
         startsAt: event.startsAt,
         ...(event.endsAt ? { endsAt: event.endsAt } : {}),
         ...(event.status ? { status: event.status } : {}),
+        appliesTo: event.appliesTo,
       }
   const fingerprint = JSON.stringify({ eventId: event.eventId, operation: event.operation, changes, sourceUrl: event.sourceUrl, sourceHash: event.sourceHash, observedAt })
   return {
@@ -226,7 +240,7 @@ export function buildEventProposal(event: DetectedImportantEvent, observedAt: st
 }
 
 export function eventSourceHash(sourceId: string, detected: DetectedImportantEvent[]): string {
-  const stable = detected.map(({ eventId, startsAt, endsAt, status, sourceHash }) => ({ eventId, startsAt, endsAt, status, sourceHash }))
+  const stable = detected.map(({ eventId, startsAt, endsAt, status, sourceHash, appliesTo }) => ({ eventId, startsAt, endsAt, status, sourceHash, appliesTo }))
   return createHash('sha256').update(JSON.stringify({ sourceId, detected: stable })).digest('hex')
 }
 
@@ -260,11 +274,11 @@ export async function processEventProposal(
   return { dryRun, applied }
 }
 
-function detectedKnown(id: string, title: string, type: ImportantEventType, start: string, sourceUrl: string, raw: string, end?: string): DetectedImportantEvent {
+function detectedKnown(id: string, title: string, type: ImportantEventType, start: string, sourceUrl: string, raw: string, appliesTo: ImportantEventApplicability, end?: string): DetectedImportantEvent {
   const excerpt = evidenceExcerpt(raw)
   return {
     eventId: id, title, type, startsAt: parseOfficialDate(start), ...(end ? { endsAt: parseOfficialDate(end) } : {}),
-    sourceUrl, excerpt, sourceHash: evidenceHash(excerpt), operation: 'UPDATE', evidenceKind: evidenceKind(excerpt),
+    sourceUrl, excerpt, sourceHash: evidenceHash(excerpt), operation: 'UPDATE', evidenceKind: evidenceKind(excerpt), appliesTo,
     ...(/cancelled|canceled|cancelad[ao]/i.test(excerpt) ? { status: 'CANCELLED' as const } : {}),
   }
 }

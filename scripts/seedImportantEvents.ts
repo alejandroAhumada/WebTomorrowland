@@ -11,7 +11,7 @@ const documents = buildImportantEventSeedDocuments(initialImportantEvents)
 
 if (!shouldWrite) {
   console.log(`Important Events válidos: ${documents.size}. Usa npm run seed:events:write para escribirlos.`)
-  console.table(initialImportantEvents.map(({ id, title, startsAt, endsAt, sourceName }) => ({ id, title, startsAt, endsAt: endsAt ?? '-', sourceName })))
+  console.table(initialImportantEvents.map(({ id, title, startsAt, endsAt, sourceName, appliesTo }) => ({ id, title, startsAt, endsAt: endsAt ?? '-', scope: appliesTo.scope, appliesTo: appliesTo.scope === 'PLAN_CATEGORIES' ? appliesTo.planCategories.join(',') : appliesTo.scope === 'PLAN_IDS' ? appliesTo.planIds.join(',') : 'Todos los planes', sourceName })))
   process.exit(0)
 }
 

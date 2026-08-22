@@ -72,11 +72,14 @@ describe('investigación determinista de acontecimientos', () => {
     expect(detectSalesEvents('<h1>Tomorrowland Brasil 2027</h1><h2>DreamVille Sale</h2>', salesUrl)).toEqual([])
   })
 
-  it('crea conservadoramente un hito nuevo inequívoco', () => {
+  it('detecta un hito nuevo pero no propone sin aplicabilidad demostrada', () => {
     const fixture = 'Tomorrowland Brasil 2027. DreamVille Package Sale starts October 1, 2026 - 10:00 BRT.'
     const event = detectSalesEvents(fixture, salesUrl)[0]
     expect(event).toMatchObject({ eventId: 'dreamville-package-sale-2027', operation: 'CREATE', type: 'SALE' })
-    expect(buildEventProposal(event, '2026-08-22T12:00:00Z').operation).toBe('CREATE')
+    expect(() => buildEventProposal(event, '2026-08-22T12:00:00Z')).toThrow('appliesTo')
+    const result = researchEventSource(EVENT_RESEARCH_SOURCES[0], { url: salesUrl, html: fixture, fetchedAt: '2026-08-22T12:00:00Z' })
+    expect(result.proposals).toEqual([])
+    expect(result.notes.join(' ')).toContain('no se propuso')
   })
 
   it('procesa contenido oficial grande sin degradación exponencial', () => {

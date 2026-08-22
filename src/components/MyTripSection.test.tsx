@@ -13,6 +13,7 @@ import { PlanCard } from './PlanCard'
 import { PlanDetailDialog } from './PlanDetailDialog'
 import { RecommendationCard } from './PlanRecommendationsSection'
 import type { PlanRecommendation } from '../models/planRecommendation'
+import { productionPlans } from '../../scripts/productionPlans'
 
 const plan = demoPlans[0]
 
@@ -26,7 +27,8 @@ describe('Mi viaje en la interfaz', () => {
     const markup = renderUi(<MyTripDashboard plan={plan} events={initialImportantEvents} />)
     expect(markup).toContain('Mi viaje')
     expect(markup).toContain(plan.name)
-    expect(markup).toContain('Próximo hito')
+    expect(markup).toContain('Mi ruta a Tomorrowland')
+    expect(markup).toContain('Hito principal en curso')
     expect(markup).toContain('Ver mi plan')
     expect(markup).toContain('Ajustar presupuesto')
     expect(markup).toContain('Comparar')
@@ -47,7 +49,21 @@ describe('Mi viaje en la interfaz', () => {
     const markup = renderUi(<MyTripDashboard plan={pending} events={[]} />)
     expect(markup).toContain('Precio Tomorrowland')
     expect(markup).toContain('Pendiente de precio oficial')
-    expect(markup).toContain('No hay nuevos hitos oficiales publicados')
+    expect(markup).toContain('No hay nuevos hitos oficiales asociados')
+  })
+
+  it('muestra hitos Global Journey solo para esa categoría', () => {
+    const globalJourney = productionPlans.find((item) => item.id === 'global-journey-hotel-2p-2027')!
+    const easyTent = productionPlans.find((item) => item.id === 'easy-tent-2p-2027')!
+    const fullMadness = productionPlans.find((item) => item.id === 'full-madness-1p-2027')!
+    const now = new Date('2026-09-01T12:00:00Z')
+    const journeyMarkup = renderUi(<MyTripDashboard plan={globalJourney} events={initialImportantEvents} now={now} />)
+    const easyTentMarkup = renderUi(<MyTripDashboard plan={easyTent} events={initialImportantEvents} now={now} />)
+    const fullMadnessMarkup = renderUi(<MyTripDashboard plan={fullMadness} events={initialImportantEvents} now={now} />)
+    expect(journeyMarkup).toContain('Simulador Global Journey')
+    expect(easyTentMarkup).not.toContain('Simulador Global Journey')
+    expect(fullMadnessMarkup).not.toContain('Venta Global Journey')
+    expect([journeyMarkup, easyTentMarkup, fullMadnessMarkup].every((markup) => markup.includes('Tomorrowland Brasil 2027'))).toBe(true)
   })
 
   it('marca Mi plan en card y recomendación', () => {

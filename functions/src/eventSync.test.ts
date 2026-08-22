@@ -16,7 +16,7 @@ function proposal(overrides: Partial<EventSyncProposal> = {}): EventSyncProposal
   return {
     proposalId: 'event-proposal-valid-001', eventId: current.id, observedAt: '2026-08-22T14:00:00.000Z',
     source: { url: sourceUrl, type: 'OFFICIAL', publisher: 'Tomorrowland' }, operation: 'UPDATE',
-    changes: { title: current.title, description: current.description, startsAt: current.startsAt, type: current.type, priority: current.priority, isFeatured: current.isFeatured },
+    changes: { title: current.title, description: current.description, startsAt: current.startsAt, type: current.type, priority: current.priority, isFeatured: current.isFeatured, appliesTo: current.appliesTo },
     evidence: { excerpt: 'Tomorrowland Brasil 2027 · Global Journey Sale September 15, 2026 at 10:00 BRT.', sourceHash, kind: 'CONFIRMATION' },
     ...overrides,
   }
@@ -25,7 +25,7 @@ function proposal(overrides: Partial<EventSyncProposal> = {}): EventSyncProposal
 function createProposal(eventId = 'dreamville-sale-2027'): EventSyncProposal {
   return proposal({
     proposalId: 'event-create-valid-001', eventId, operation: 'CREATE',
-    changes: { title: 'Venta DreamVille', description: 'Venta oficial de paquetes DreamVille para Tomorrowland Brasil 2027.', startsAt: '2026-10-01T10:00:00-03:00', timeZone: 'America/Sao_Paulo', type: 'SALE', priority: 80, isFeatured: true },
+    changes: { title: 'Venta DreamVille', description: 'Venta oficial de paquetes DreamVille para Tomorrowland Brasil 2027.', startsAt: '2026-10-01T10:00:00-03:00', timeZone: 'America/Sao_Paulo', type: 'SALE', priority: 80, isFeatured: true, appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] } },
     evidence: { excerpt: 'Tomorrowland Brasil 2027 announces the DreamVille sale on October 1, 2026 at 10:00 BRT.', sourceHash, kind: 'CREATE' },
   })
 }
@@ -66,6 +66,11 @@ describe('contrato de Event Sync API', () => {
   it('rechaza evidencia excesiva y hash inválido', () => {
     expect(() => parseEventSyncProposal({ ...proposal(), evidence: { ...proposal().evidence, excerpt: `Tomorrowland Brasil 2027 ${'x'.repeat(600)}` } })).toThrow('excerpt')
     expect(() => parseEventSyncProposal({ ...proposal(), evidence: { ...proposal().evidence, sourceHash: 'short' } })).toThrow('sourceHash')
+  })
+  it('valida appliesTo y rechaza categorías o IDs inválidos', () => {
+    expect(parseEventSyncProposal(createProposal()).changes.appliesTo).toEqual({ scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] })
+    expect(() => parseEventSyncProposal({ ...createProposal(), changes: { ...createProposal().changes, appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['UNKNOWN'] } } })).toThrow('categorías')
+    expect(() => parseEventSyncProposal({ ...createProposal(), changes: { ...createProposal().changes, appliesTo: { scope: 'PLAN_IDS', planIds: ['invalid id'] } } })).toThrow('IDs')
   })
 })
 

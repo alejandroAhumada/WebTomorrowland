@@ -23,4 +23,11 @@ describe('ImportantEvent', () => {
     expect(validateImportantEvent({ ...validEvent, startsAt: '2026-09-31' })).toContain('La fecha de inicio no es válida.')
     expect(validateImportantEvent({ ...validEvent, endsAt: '2026-09-01' })).toContain('La fecha de término no puede ser anterior al inicio.')
   })
+
+  it('valida aplicabilidad estructurada', () => {
+    expect(validateImportantEvent({ ...validEvent, appliesTo: { scope: 'ALL' } })).toEqual([])
+    expect(validateImportantEvent({ ...validEvent, appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['GLOBAL_JOURNEY'] } })).toEqual([])
+    expect(validateImportantEvent({ ...validEvent, appliesTo: { scope: 'PLAN_IDS', planIds: ['easy-tent-2p-2027'] } })).toEqual([])
+    expect(validateImportantEvent({ ...validEvent, appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: [] } })).toContain('La aplicabilidad por categoría requiere categorías válidas.')
+  })
 })

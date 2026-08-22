@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
-import { assertValidImportantEvent, type ImportantEvent, type ImportantEventStatus, type ImportantEventType } from '../../src/models/importantEvent.js'
+import { assertValidImportantEvent, validateImportantEventApplicability, type ImportantEvent, type ImportantEventApplicability, type ImportantEventStatus, type ImportantEventType } from '../../src/models/importantEvent.js'
 import { officialSourceUrl } from './planSync.js'
 
 const proposalKeys = new Set(['proposalId', 'eventId', 'observedAt', 'source', 'operation', 'changes', 'evidence'])
-const createKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'timeZone', 'type', 'priority', 'isFeatured', 'status'])
-const updateKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'type', 'priority', 'isFeatured', 'status'])
+const createKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'timeZone', 'type', 'priority', 'isFeatured', 'status', 'appliesTo'])
+const updateKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'type', 'priority', 'isFeatured', 'status', 'appliesTo'])
 const eventTypes = new Set<ImportantEventType>(['REGISTRATION', 'SIMULATOR', 'SALE', 'PRE_SALE', 'FESTIVAL', 'ANNOUNCEMENT'])
 
 export type EventSyncOperation = 'CREATE' | 'UPDATE'
@@ -21,6 +21,7 @@ export interface EventChanges {
   priority?: number
   isFeatured?: boolean
   status?: ImportantEventStatus
+  appliesTo?: ImportantEventApplicability
 }
 export interface EventSyncProposal {
   proposalId: string
@@ -177,13 +178,13 @@ export function evaluateEventProposal(current: ImportantEvent | null, proposal: 
 
 function buildCreatedEvent(proposal: EventSyncProposal, serverTimestamp: string): ImportantEvent {
   const changes = proposal.changes
-  for (const field of ['title', 'description', 'startsAt', 'timeZone', 'type', 'priority', 'isFeatured'] as const) {
+  for (const field of ['title', 'description', 'startsAt', 'timeZone', 'type', 'priority', 'isFeatured', 'appliesTo'] as const) {
     if (changes[field] === undefined) invalid(`CREATE requiere ${field}.`)
   }
   return {
     id: proposal.eventId, title: changes.title!, description: changes.description!, startsAt: changes.startsAt!,
     ...(changes.endsAt ? { endsAt: changes.endsAt } : {}), timeZone: changes.timeZone!, type: changes.type!,
-    priority: changes.priority!, isFeatured: changes.isFeatured!, ...(changes.status ? { status: changes.status } : {}),
+    priority: changes.priority!, isFeatured: changes.isFeatured!, appliesTo: changes.appliesTo!, ...(changes.status ? { status: changes.status } : {}),
     sourceName: proposal.source.publisher, sourceUrl: proposal.source.url, sourceObservedAt: proposal.observedAt,
     verifiedAt: proposal.observedAt.slice(0, 10), updatedAt: serverTimestamp.slice(0, 10),
   }
@@ -207,8 +208,16 @@ function parseChanges(value: Record<string, unknown>, operation: EventSyncOperat
   if ('priority' in value) { if (!Number.isInteger(value.priority) || Number(value.priority) < 0 || Number(value.priority) > 100) invalid('priority debe ser un entero entre 0 y 100.'); changes.priority = value.priority as number }
   if ('isFeatured' in value) { if (typeof value.isFeatured !== 'boolean') invalid('isFeatured debe ser boolean.'); changes.isFeatured = value.isFeatured }
   if ('status' in value) { if (value.status !== 'CANCELLED') invalid('status solo admite CANCELLED.'); changes.status = value.status }
+  if ('appliesTo' in value) changes.appliesTo = parseApplicability(value.appliesTo)
   if (operation === 'CREATE' && changes.status === 'CANCELLED') invalid('No se puede crear automáticamente un acontecimiento ya cancelado.')
   return changes
+}
+
+function parseApplicability(value: unknown): ImportantEventApplicability {
+  const applicability = object(value, 'appliesTo debe ser un objeto.') as unknown as ImportantEventApplicability
+  const errors = validateImportantEventApplicability(applicability)
+  if (errors.length > 0) invalid(errors.join(' '))
+  return structuredClone(applicability)
 }
 
 function finishRejection(transaction: EventSyncTransaction, proposal: EventSyncProposal, hash: string, receivedAt: string, options: { dryRun: boolean; now: () => Date }, code: EventRejectionCode, message: string): EventSyncResponse {

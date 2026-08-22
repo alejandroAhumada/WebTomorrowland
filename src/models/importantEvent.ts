@@ -1,5 +1,9 @@
 export type ImportantEventType = 'REGISTRATION' | 'SIMULATOR' | 'SALE' | 'PRE_SALE' | 'FESTIVAL' | 'ANNOUNCEMENT'
 export type ImportantEventStatus = 'CANCELLED'
+export type ImportantEventApplicability =
+  | { scope: 'ALL' }
+  | { scope: 'PLAN_CATEGORIES'; planCategories: PlanCategory[] }
+  | { scope: 'PLAN_IDS'; planIds: string[] }
 
 export interface ImportantEvent {
   id: string
@@ -13,6 +17,7 @@ export interface ImportantEvent {
   sourceUrl: string
   priority: number
   isFeatured: boolean
+  appliesTo: ImportantEventApplicability
   status?: ImportantEventStatus
   sourceObservedAt?: string
   verifiedAt: string
@@ -44,10 +49,28 @@ export function validateImportantEvent(event: ImportantEvent): string[] {
   if (!isOfficialTomorrowlandUrl(event.sourceUrl)) errors.push('La URL debe pertenecer a una fuente oficial de Tomorrowland.')
   if (!Number.isInteger(event.priority) || event.priority < 0) errors.push('La prioridad debe ser un entero no negativo.')
   if (typeof event.isFeatured !== 'boolean') errors.push('El indicador destacado no es válido.')
+  errors.push(...validateImportantEventApplicability(event.appliesTo))
   if (event.status !== undefined && event.status !== 'CANCELLED') errors.push('El estado del acontecimiento no es válido.')
   if (event.sourceObservedAt !== undefined && !isTimestamp(event.sourceObservedAt)) errors.push('La fecha de observación de la fuente no es válida.')
   if (!isCivilDate(event.verifiedAt) || !isCivilDate(event.updatedAt)) errors.push('Las fechas de trazabilidad no son válidas.')
   return errors
+}
+
+export function validateImportantEventApplicability(value: ImportantEventApplicability): string[] {
+  if (!value || typeof value !== 'object') return ['La aplicabilidad del acontecimiento no es válida.']
+  const keys = Object.keys(value)
+  if (value.scope === 'ALL') return keys.length === 1 ? [] : ['La aplicabilidad ALL no admite filtros adicionales.']
+  if (value.scope === 'PLAN_CATEGORIES') {
+    if (keys.some((key) => !['scope', 'planCategories'].includes(key)) || !Array.isArray(value.planCategories) || value.planCategories.length === 0) return ['La aplicabilidad por categoría requiere categorías válidas.']
+    if (new Set(value.planCategories).size !== value.planCategories.length || value.planCategories.some((category) => !['GLOBAL_JOURNEY', 'SEPARATE_PURCHASE'].includes(category))) return ['La aplicabilidad contiene categorías de plan inválidas.']
+    return []
+  }
+  if (value.scope === 'PLAN_IDS') {
+    if (keys.some((key) => !['scope', 'planIds'].includes(key)) || !Array.isArray(value.planIds) || value.planIds.length === 0) return ['La aplicabilidad por plan requiere IDs válidos.']
+    if (new Set(value.planIds).size !== value.planIds.length || value.planIds.some((id) => typeof id !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(id) || id.length > 100)) return ['La aplicabilidad contiene IDs de plan inválidos.']
+    return []
+  }
+  return ['El alcance de aplicabilidad no es válido.']
 }
 
 export function assertValidImportantEvent(event: ImportantEvent): ImportantEvent {
@@ -83,3 +106,4 @@ function comparableTime(value: string): number {
   }
   return Date.parse(value)
 }
+import type { PlanCategory } from './plan.js'
