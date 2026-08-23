@@ -5,6 +5,8 @@ export interface TripPreparationContextValue {
   state: TripPreparationState
   getProgress: (planId: string, taskId: string) => PersonalTripTaskProgress | null
   setCompleted: (planId: string, taskId: string, completed: boolean) => void
+  setExpense: (planId: string, taskId: string, amount: number, purchasedAt?: string) => void
+  removeExpense: (planId: string, taskId: string) => void
   resetPlan: (planId: string) => void
 }
 

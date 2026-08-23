@@ -22,6 +22,8 @@ La Home calcula recomendaciones explicables para 1 o 2 personas sin persistir ra
 
 **Mi preparación** es una checklist personal, separada visual y semánticamente de los hitos oficiales. Sus definiciones se derivan localmente desde datos estructurados del plan; por ejemplo, alojamiento externo solo aparece cuando el paquete no lo incluye. El navegador persiste exclusivamente progreso por plan en `webtomorrowland:trip-preparation:v1`, nunca títulos, planes ni datos oficiales. No utiliza Firestore, Research Agent ni Sync APIs.
 
+Vuelo, alojamiento externo, seguro y transporte permiten registrar opcionalmente un gasto real en CLP y una fecha civil de pago. Completar una tarea y registrar un gasto son acciones independientes. El esquema local V2 migra automáticamente el progreso V1 bajo la misma key y conserva por separado la estimación original, lo pagado y una proyección actual. Solo se reemplazan estimaciones comparables; gastos no contemplados, como el seguro, se incorporan como adicionales. Esta información nunca sale del navegador.
+
 ## Requisitos
 
 - Node.js 22

@@ -9,6 +9,19 @@ describe('tareas personales del viaje', () => {
     expect(personalTripTaskDefinitions.map((task) => task.id)).toEqual(['documentation', 'flight', 'external-accommodation', 'travel-insurance', 'local-transport', 'payment-method', 'luggage', 'flight-check-in'])
   })
 
+  it('declara gasto y categoría estructurados sin inferir por título', () => {
+    expect(personalTripTaskDefinitions.map(({ id, expenseTracking, budgetCategory }) => ({ id, expenseTracking, budgetCategory }))).toEqual([
+      { id: 'documentation', expenseTracking: 'NONE', budgetCategory: undefined },
+      { id: 'flight', expenseTracking: 'PER_PERSON', budgetCategory: 'FLIGHT' },
+      { id: 'external-accommodation', expenseTracking: 'PER_GROUP', budgetCategory: 'EXTERNAL_ACCOMMODATION' },
+      { id: 'travel-insurance', expenseTracking: 'PER_PERSON', budgetCategory: undefined },
+      { id: 'local-transport', expenseTracking: 'PER_GROUP', budgetCategory: 'LOCAL_TRANSPORT' },
+      { id: 'payment-method', expenseTracking: 'NONE', budgetCategory: undefined },
+      { id: 'luggage', expenseTracking: 'NONE', budgetCategory: undefined },
+      { id: 'flight-check-in', expenseTracking: 'NONE', budgetCategory: undefined },
+    ])
+  })
+
   it('incluye las tareas globales y vuelo para todos los planes actuales', () => {
     const tasks = buildPersonalTripTasks(plan('global-journey-hotel-1p-2027'))
     expect(tasks.map((task) => task.id)).toEqual(['documentation', 'flight', 'travel-insurance', 'local-transport', 'payment-method', 'luggage', 'flight-check-in'])

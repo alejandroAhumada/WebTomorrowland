@@ -1,10 +1,20 @@
-import { isPersonalTripTaskId } from './personalTripTask.js'
+import { getPersonalTripTaskDefinition, isPersonalTripTaskId } from './personalTripTask.js'
 
 export const tripPreparationStorageKey = 'webtomorrowland:trip-preparation:v1'
+export const tripPreparationStorageVersion = 2
+export const maximumActualExpenseClp = 100_000_000
+
+export interface ActualExpense {
+  amount: number
+  currency: 'CLP'
+  scope: 'PER_PERSON' | 'PER_GROUP'
+}
 
 export interface PersonalTripTaskProgress {
-  completed: true
-  completedAt: string
+  completed?: true
+  completedAt?: string
+  actualExpense?: ActualExpense
+  purchasedAt?: string
 }
 
 export interface TripPreparationState {
@@ -24,14 +34,15 @@ export function parseTripPreparation(value: string | null): TripPreparationState
   if (!value) return emptyTripPreparation()
   try {
     const parsed: unknown = JSON.parse(value)
-    if (!isRecord(parsed) || parsed.version !== 1 || !isRecord(parsed.plans)) return emptyTripPreparation()
+    if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== 2) || !isRecord(parsed.plans)) return emptyTripPreparation()
     const plans: TripPreparationState['plans'] = {}
     for (const [planId, rawTasks] of Object.entries(parsed.plans)) {
       if (!planIdPattern.test(planId) || !isRecord(rawTasks)) continue
       const tasks: Record<string, PersonalTripTaskProgress> = {}
       for (const [taskId, rawProgress] of Object.entries(rawTasks)) {
-        if (!isPersonalTripTaskId(taskId) || !isValidProgress(rawProgress)) continue
-        tasks[taskId] = { completed: true, completedAt: rawProgress.completedAt }
+        if (!isPersonalTripTaskId(taskId)) continue
+        const progress = normalizeProgress(rawProgress, taskId, parsed.version)
+        if (progress) tasks[taskId] = progress
       }
       if (Object.keys(tasks).length > 0) plans[planId] = tasks
     }
@@ -42,7 +53,7 @@ export function parseTripPreparation(value: string | null): TripPreparationState
 }
 
 export function serializeTripPreparation(state: TripPreparationState): string {
-  return JSON.stringify({ version: 1, plans: state.plans })
+  return JSON.stringify({ version: tripPreparationStorageVersion, plans: state.plans })
 }
 
 export function readTripPreparation(storage: StorageReader | null): TripPreparationState {
@@ -66,11 +77,17 @@ export function tripPreparationFromStorageChange(key: string | null, value: stri
 export function setTaskCompleted(state: TripPreparationState, planId: string, taskId: string, completed: boolean, now = new Date()): TripPreparationState {
   if (!planIdPattern.test(planId) || !isPersonalTripTaskId(taskId)) return state
   const currentPlan = state.plans[planId] ?? {}
-  if (completed && currentPlan[taskId]) return state
-  if (!completed && !currentPlan[taskId]) return state
+  if (completed && currentPlan[taskId]?.completed) return state
+  if (!completed && !currentPlan[taskId]?.completed) return state
   const nextPlan = { ...currentPlan }
-  if (completed) nextPlan[taskId] = { completed: true, completedAt: now.toISOString() }
-  else delete nextPlan[taskId]
+  if (completed) nextPlan[taskId] = { ...currentPlan[taskId], completed: true, completedAt: now.toISOString() }
+  else {
+    const expenseOnly = { ...currentPlan[taskId] }
+    delete expenseOnly.completed
+    delete expenseOnly.completedAt
+    if (Object.keys(expenseOnly).length > 0) nextPlan[taskId] = expenseOnly
+    else delete nextPlan[taskId]
+  }
   const plans = { ...state.plans }
   if (Object.keys(nextPlan).length > 0) plans[planId] = nextPlan
   else delete plans[planId]
@@ -88,10 +105,82 @@ export function getTaskProgress(state: TripPreparationState, planId: string, tas
   return state.plans[planId]?.[taskId] ?? null
 }
 
-function isValidProgress(value: unknown): value is PersonalTripTaskProgress {
-  return isRecord(value) && value.completed === true && typeof value.completedAt === 'string'
-    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value.completedAt)
-    && Number.isFinite(Date.parse(value.completedAt))
+export function setTaskExpense(state: TripPreparationState, planId: string, taskId: string, amount: number, purchasedAt?: string, today = currentCivilDate()): TripPreparationState {
+  const definition = getPersonalTripTaskDefinition(taskId)
+  if (!planIdPattern.test(planId) || !definition || definition.expenseTracking === 'NONE' || !isValidExpenseAmount(amount)) return state
+  if (purchasedAt !== undefined && !isValidPurchasedAt(purchasedAt, today)) return state
+  const currentPlan = state.plans[planId] ?? {}
+  const nextProgress: PersonalTripTaskProgress = {
+    ...currentPlan[taskId],
+    actualExpense: { amount, currency: 'CLP', scope: definition.expenseTracking },
+    ...(purchasedAt ? { purchasedAt } : {}),
+  }
+  if (!purchasedAt) delete nextProgress.purchasedAt
+  return { plans: { ...state.plans, [planId]: { ...currentPlan, [taskId]: nextProgress } } }
+}
+
+export function removeTaskExpense(state: TripPreparationState, planId: string, taskId: string): TripPreparationState {
+  const current = state.plans[planId]?.[taskId]
+  if (!current?.actualExpense) return state
+  const completion = { ...current }
+  delete completion.actualExpense
+  delete completion.purchasedAt
+  const nextPlan = { ...state.plans[planId] }
+  if (Object.keys(completion).length > 0) nextPlan[taskId] = completion
+  else delete nextPlan[taskId]
+  const plans = { ...state.plans }
+  if (Object.keys(nextPlan).length > 0) plans[planId] = nextPlan
+  else delete plans[planId]
+  return { plans }
+}
+
+export function isValidExpenseAmount(amount: number): boolean {
+  return Number.isInteger(amount) && Number.isFinite(amount) && amount >= 0 && amount <= maximumActualExpenseClp
+}
+
+export function isValidPurchasedAt(value: string, today = currentCivilDate()): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return false
+  const year = Number(match[1]); const month = Number(match[2]); const day = Number(match[3])
+  const calendar = new Date(Date.UTC(year, month - 1, day))
+  const exists = calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day
+  return exists && value <= today
+}
+
+function normalizeProgress(value: unknown, taskId: string, version: number): PersonalTripTaskProgress | null {
+  if (!isRecord(value)) return null
+  const progress: PersonalTripTaskProgress = {}
+  if (value.completed === true && isValidCompletedAt(value.completedAt)) {
+    progress.completed = true
+    progress.completedAt = value.completedAt
+  } else if (version === 1 || value.completed !== undefined || value.completedAt !== undefined) {
+    return null
+  }
+  if (version === 2 && value.actualExpense !== undefined) {
+    const definition = getPersonalTripTaskDefinition(taskId)
+    if (!definition || definition.expenseTracking === 'NONE' || !isValidActualExpense(value.actualExpense, definition.expenseTracking)) return null
+    progress.actualExpense = { ...value.actualExpense }
+    if (value.purchasedAt !== undefined) {
+      if (typeof value.purchasedAt !== 'string' || !isValidPurchasedAt(value.purchasedAt)) return null
+      progress.purchasedAt = value.purchasedAt
+    }
+  } else if (value.purchasedAt !== undefined) return null
+  return Object.keys(progress).length > 0 ? progress : null
+}
+
+function isValidActualExpense(value: unknown, expectedScope: 'PER_PERSON' | 'PER_GROUP'): value is ActualExpense {
+  return isRecord(value) && isValidExpenseAmount(value.amount as number) && value.currency === 'CLP' && value.scope === expectedScope
+}
+
+function isValidCompletedAt(value: unknown): value is string {
+  return typeof value === 'string'
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && Number.isFinite(Date.parse(value))
+}
+
+function currentCivilDate(now = new Date()): string {
+  const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

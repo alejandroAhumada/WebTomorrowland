@@ -9,6 +9,9 @@ import { PriceBadge } from './PriceBadge'
 import { TravelBudgetBreakdown } from './TravelBudgetView'
 import { BudgetPreferencesEditor } from './BudgetPreferencesEditor'
 import { useMyTrip } from '../state/useMyTrip'
+import { useTripPreparation } from '../state/useTripPreparation'
+import { calculateExecutedTravelBudget } from '../models/executedTravelBudget'
+import { ExecutedBudgetBreakdown } from './ExecutedBudgetView'
 
 export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { plan: TravelPlan; onClose: () => void; openBudgetEditor?: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -17,6 +20,8 @@ export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { 
   const TravelersIcon = plan.travelerCount === 1 ? UserRound : UsersRound
   const { isMyPlan, selectPlan, clearPlan } = useMyTrip()
   const selectedAsMyPlan = isMyPlan(plan.id)
+  const { state: preparation } = useTripPreparation()
+  const executed = calculateExecutedTravelBudget(budget, preparation.plans[plan.id] ?? {})
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -32,6 +37,7 @@ export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { 
       <section className="detail-price" aria-label="Precio Tomorrowland"><div><span>Precio Tomorrowland</span>{plan.totalPrice ? <><strong>{formatMoney(plan.totalPrice)}</strong><ClpConversion money={plan.totalPrice} />{perPerson && <small>{formatMoney(perPerson)} por persona</small>}</> : <><strong>Precio pendiente</strong><small>Aún no publicado por Tomorrowland</small></>}</div><PriceBadge type={plan.priceType} /></section>
       <section className="my-plan-action" aria-label="Planificación de Mi viaje"><div>{selectedAsMyPlan ? <BookmarkCheck aria-hidden="true" /> : <Bookmark aria-hidden="true" />}<p><strong>{selectedAsMyPlan ? 'Este es mi plan' : '¿Quieres planificar con esta alternativa?'}</strong><span>Esta selección sirve para organizar tu viaje y no representa una reserva o compra.</span></p></div>{selectedAsMyPlan ? <button className="text-button" type="button" onClick={clearPlan}>Dejar de usar como mi plan</button> : <button className="button secondary" type="button" onClick={() => selectPlan(plan.id)}>Elegir como mi plan</button>}</section>
       <TravelBudgetBreakdown budget={budget} loading={budgetLoading} />
+      {selectedAsMyPlan && <ExecutedBudgetBreakdown executed={executed} />}
       <BudgetPreferencesEditor defaultOpen={openBudgetEditor} />
       <div className="detail-features"><DetailList title="Incluye" items={plan.inclusions} included /><DetailList title="No incluido" items={plan.notIncluded} /></div>
       {plan.sources.map((source) => source.url ? <a className="detail-source" key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.type === 'OFFICIAL' ? 'Fuente oficial' : source.label}<ArrowUpRight aria-hidden="true" /></a> : null)}

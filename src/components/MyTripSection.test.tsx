@@ -15,12 +15,14 @@ import { PlanDetailDialog } from './PlanDetailDialog'
 import { RecommendationCard } from './PlanRecommendationsSection'
 import type { PlanRecommendation } from '../models/planRecommendation'
 import { productionPlans } from '../../scripts/productionPlans'
+import type { PersonalTripTaskProgress } from '../models/tripPreparation'
 
 const plan = demoPlans[0]
 
-function renderUi(node: ReactNode, options: { selectedId?: string | null; personalized?: boolean; completedTaskIds?: string[] } = {}) {
+function renderUi(node: ReactNode, options: { selectedId?: string | null; personalized?: boolean; completedTaskIds?: string[]; planId?: string; progress?: Record<string, PersonalTripTaskProgress> } = {}) {
   const preferences = options.personalized ? { ...defaultBudgetPreferences, flightPerPerson: 520000 } : defaultBudgetPreferences
-  const initialState = { plans: { [plan.id]: Object.fromEntries((options.completedTaskIds ?? []).map((taskId) => [taskId, { completed: true as const, completedAt: '2026-08-22T18:00:00.000Z' }])) } }
+  const progress = { ...Object.fromEntries((options.completedTaskIds ?? []).map((taskId) => [taskId, { completed: true as const, completedAt: '2026-08-22T18:00:00.000Z' }])), ...options.progress }
+  const initialState = { plans: { [options.planId ?? plan.id]: progress } }
   return renderToStaticMarkup(<MemoryRouter><BudgetPreferencesProvider initialPreferences={preferences}><TripPreparationProvider initialState={initialState}><MyTripProvider initialPlanId={options.selectedId !== undefined ? options.selectedId : plan.id}><SelectionProvider>{node}</SelectionProvider></MyTripProvider></TripPreparationProvider></BudgetPreferencesProvider></MemoryRouter>)
 }
 
@@ -113,5 +115,33 @@ describe('Mi viaje en la interfaz', () => {
     expect(selected).toContain('Dejar de usar como mi plan')
     expect(selected).toContain('<details class="budget-editor" open=""')
     expect(other).toContain('Elegir como mi plan')
+  })
+
+  it('muestra gasto real, proyección y formulario sin confundirlos con la estimación', () => {
+    const progress = { flight: { actualExpense: { amount: 365000, currency: 'CLP' as const, scope: 'PER_PERSON' as const }, purchasedAt: '2026-08-20' } }
+    const markup = renderUi(<MyTripDashboard plan={plan} events={[]} />, { progress })
+    expect(markup).toContain('Pagado: $365.000 por persona')
+    expect(markup).toContain('35.000 bajo la estimación')
+    expect(markup).toContain('Proyección actual')
+    expect(markup).toContain('Editar gasto')
+    expect(markup).toContain('Eliminar gasto')
+    expect(markup).toContain('0 de 7 completados')
+  })
+
+  it('muestra seguro sin estimación y gastos conocidos en plan PENDING', () => {
+    const pending = productionPlans.find((item) => item.id === 'global-journey-hotel-1p-2027')!
+    const progress = { 'travel-insurance': { actualExpense: { amount: 35000, currency: 'CLP' as const, scope: 'PER_PERSON' as const } } }
+    const markup = renderUi(<MyTripDashboard plan={pending} events={[]} />, { planId: pending.id, progress })
+    expect(markup).toContain('Pagado: $35.000 por persona')
+    expect(markup).toContain('no incluida en el presupuesto referencial')
+    expect(markup).toContain('Presupuesto total pendiente del precio oficial')
+  })
+
+  it('detalle del plan elegido muestra ejecución separada', () => {
+    const progress = { flight: { actualExpense: { amount: 365000, currency: 'CLP' as const, scope: 'PER_PERSON' as const } } }
+    const markup = renderUi(<PlanDetailDialog plan={plan} onClose={() => undefined} />, { progress })
+    expect(markup).toContain('Ejecución del presupuesto')
+    expect(markup).toContain('Estimación original')
+    expect(markup).toContain('Pagado registrado')
   })
 })

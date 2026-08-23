@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyTripPreparation, getTaskProgress, parseTripPreparation, persistTripPreparation, readTripPreparation, resetPlanPreparation, serializeTripPreparation, setTaskCompleted, tripPreparationFromStorageChange, tripPreparationStorageKey } from './tripPreparation'
+import { emptyTripPreparation, getTaskProgress, isValidExpenseAmount, isValidPurchasedAt, parseTripPreparation, persistTripPreparation, readTripPreparation, removeTaskExpense, resetPlanPreparation, serializeTripPreparation, setTaskCompleted, setTaskExpense, tripPreparationFromStorageChange, tripPreparationStorageKey } from './tripPreparation'
 
 const easyTent = 'easy-tent-2p-2027'
 const fullMadness = 'full-madness-2p-2027'
@@ -50,5 +50,47 @@ describe('progreso de preparación', () => {
     const state = setTaskCompleted(emptyTripPreparation(), easyTent, 'flight', true, completedAt)
     expect(tripPreparationFromStorageChange(tripPreparationStorageKey, serializeTripPreparation(state))).toEqual(state)
     expect(tripPreparationFromStorageChange('other:key', null)).toBeNull()
+  })
+
+  it('registra, edita y elimina gasto sin cambiar completed', () => {
+    const expenseOnly = setTaskExpense(emptyTripPreparation(), easyTent, 'flight', 365000, '2026-08-20', '2026-08-22')
+    expect(getTaskProgress(expenseOnly, easyTent, 'flight')).toEqual({ actualExpense: { amount: 365000, currency: 'CLP', scope: 'PER_PERSON' }, purchasedAt: '2026-08-20' })
+    const edited = setTaskExpense(expenseOnly, easyTent, 'flight', 372450, undefined, '2026-08-22')
+    expect(getTaskProgress(edited, easyTent, 'flight')).toEqual({ actualExpense: { amount: 372450, currency: 'CLP', scope: 'PER_PERSON' } })
+    expect(removeTaskExpense(edited, easyTent, 'flight')).toEqual({ plans: {} })
+  })
+
+  it('conserva gasto al completar y al volver a pendiente', () => {
+    const expense = setTaskExpense(emptyTripPreparation(), easyTent, 'flight', 0)
+    const completed = setTaskCompleted(expense, easyTent, 'flight', true, completedAt)
+    expect(getTaskProgress(completed, easyTent, 'flight')?.actualExpense?.amount).toBe(0)
+    const pending = setTaskCompleted(completed, easyTent, 'flight', false)
+    expect(getTaskProgress(pending, easyTent, 'flight')).toEqual({ actualExpense: { amount: 0, currency: 'CLP', scope: 'PER_PERSON' } })
+  })
+
+  it('valida monto y fecha civil sin aceptar futuro ni fechas imposibles', () => {
+    expect(isValidExpenseAmount(0)).toBe(true)
+    expect(isValidExpenseAmount(-1)).toBe(false)
+    expect(isValidExpenseAmount(1.5)).toBe(false)
+    expect(isValidExpenseAmount(Number.POSITIVE_INFINITY)).toBe(false)
+    expect(isValidPurchasedAt('2026-02-28', '2026-08-22')).toBe(true)
+    expect(isValidPurchasedAt('2026-02-31', '2026-08-22')).toBe(false)
+    expect(isValidPurchasedAt('23/08/2026', '2026-08-22')).toBe(false)
+    expect(isValidPurchasedAt('2026-08-23', '2026-08-22')).toBe(false)
+  })
+
+  it('migra V1 a V2 de forma determinista e idempotente preservando varios planes', () => {
+    const v1 = JSON.stringify({ version: 1, plans: { [easyTent]: { flight: { completed: true, completedAt: completedAt.toISOString() } }, [fullMadness]: { documentation: { completed: true, completedAt: completedAt.toISOString() } } } })
+    const migrated = parseTripPreparation(v1)
+    expect(JSON.parse(serializeTripPreparation(migrated)).version).toBe(2)
+    expect(parseTripPreparation(serializeTripPreparation(migrated))).toEqual(migrated)
+    expect(Object.keys(migrated.plans)).toEqual([easyTent, fullMadness])
+  })
+
+  it('rechaza gastos con scope incorrecto, tareas sin tracking y versión futura', () => {
+    const invalid = (taskId: string, scope: string) => JSON.stringify({ version: 2, plans: { [easyTent]: { [taskId]: { actualExpense: { amount: 10, currency: 'CLP', scope } } } } })
+    expect(parseTripPreparation(invalid('flight', 'PER_GROUP'))).toEqual({ plans: {} })
+    expect(parseTripPreparation(invalid('documentation', 'PER_GROUP'))).toEqual({ plans: {} })
+    expect(parseTripPreparation(JSON.stringify({ version: 3, plans: {} }))).toEqual({ plans: {} })
   })
 })
