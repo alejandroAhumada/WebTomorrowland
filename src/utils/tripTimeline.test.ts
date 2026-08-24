@@ -38,7 +38,7 @@ describe('trip timeline', () => {
 
   it('prioriza un evento activo por prioridad y luego el siguiente cronológico', () => {
     expect(buildTripTimeline(globalJourney, initialImportantEvents, new Date('2026-08-22T12:00:00Z')).primaryMilestone?.id).toBe(registration.id)
-    expect(buildTripTimeline(globalJourney, initialImportantEvents, new Date('2026-09-24T14:00:00Z')).primaryMilestone?.id).toBe(festival.id)
+    expect(buildTripTimeline(globalJourney, initialImportantEvents, new Date('2026-09-24T14:00:00Z')).primaryMilestone?.id).toBe('treasure-case-home-delivery-deadline-2027')
   })
 
   it('mantiene la relevancia aunque el precio del plan esté pendiente', () => {

@@ -6,7 +6,7 @@ const validEvent: ImportantEvent = initialImportantEvents[1]
 
 describe('ImportantEvent', () => {
   it('valida el dataset oficial inicial completo', () => {
-    expect(initialImportantEvents.map(assertValidImportantEvent)).toHaveLength(6)
+    expect(initialImportantEvents.map(assertValidImportantEvent)).toHaveLength(7)
   })
 
   it('requiere una fuente oficial identificada', () => {

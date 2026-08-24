@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       research_scope:
-        description: Research plans, important events, or both
+        description: Research plans, important events, official tiers/information, or all
         required: true
         type: choice
-        options: [all, plans, events]
+        options: [all, plans, events, information]
         default: all
       apply_changes:
         description: Apply only proposals accepted by the corresponding Sync API dry-run
@@ -61,10 +61,18 @@ jobs:
           service_account: tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com
           token_format: id_token
           id_token_audience: https://synctomorrowlandevent-roe56dc57a-uc.a.run.app
+      - id: auth_content
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_TOMORROWLAND_RESEARCH_WIF_PROVIDER }}
+          service_account: tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: https://us-central1-web-pack-tomorrowland.cloudfunctions.net/syncTomorrowlandContent
       - name: Research and validate official sources
         env:
           PLAN_SYNC_API_ID_TOKEN: ${{ steps.auth_plan.outputs.id_token }}
           EVENT_SYNC_API_ID_TOKEN: ${{ steps.auth_event.outputs.id_token }}
+          CONTENT_SYNC_API_ID_TOKEN: ${{ steps.auth_content.outputs.id_token }}
         run: npm run research:tomorrowland
       - name: Save research source state
         uses: actions/cache/save@v4

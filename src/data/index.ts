@@ -4,6 +4,10 @@ import { LocalPlanRepository } from './LocalPlanRepository'
 import { LocalExchangeRateRepository } from './LocalExchangeRateRepository'
 import type { ImportantEventRepository } from './ImportantEventRepository'
 import { LocalImportantEventRepository } from './LocalImportantEventRepository'
+import type { TicketTierRepository } from './TicketTierRepository'
+import type { ImportantInformationRepository } from './ImportantInformationRepository'
+import type { TicketTier } from '../models/ticketTier'
+import type { ImportantInformation } from '../models/importantInformation'
 
 class ConfiguredPlanRepository implements PlanRepository {
   private delegate?: Promise<PlanRepository>
@@ -68,3 +72,25 @@ class ConfiguredImportantEventRepository implements ImportantEventRepository {
 }
 
 export const importantEventRepository: ImportantEventRepository = new ConfiguredImportantEventRepository()
+
+class ConfiguredTicketTierRepository implements TicketTierRepository {
+  private request?: Promise<TicketTier[]>
+  getAll() {
+    this.request ??= (import.meta.env.VITE_DATA_SOURCE === 'firestore'
+      ? import('./FirestoreTicketTierRepository').then(({ FirestoreTicketTierRepository }) => new FirestoreTicketTierRepository().getAll())
+      : import('./LocalTicketTierRepository').then(({ LocalTicketTierRepository }) => new LocalTicketTierRepository().getAll()))
+    return this.request
+  }
+}
+export const ticketTierRepository = new ConfiguredTicketTierRepository()
+
+class ConfiguredImportantInformationRepository implements ImportantInformationRepository {
+  private request?: Promise<ImportantInformation[]>
+  getAll() {
+    this.request ??= (import.meta.env.VITE_DATA_SOURCE === 'firestore'
+      ? import('./FirestoreImportantInformationRepository').then(({ FirestoreImportantInformationRepository }) => new FirestoreImportantInformationRepository().getAll())
+      : import('./LocalImportantInformationRepository').then(({ LocalImportantInformationRepository }) => new LocalImportantInformationRepository().getAll()))
+    return this.request
+  }
+}
+export const importantInformationRepository = new ConfiguredImportantInformationRepository()

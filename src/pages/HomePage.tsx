@@ -4,6 +4,7 @@ import { BrandMark } from '../components/BrandMark'
 import { ImportantEventsSection } from '../components/ImportantEventsSection'
 import { PlanRecommendationsSection } from '../components/PlanRecommendationsSection'
 import { MyTripSection } from '../components/MyTripSection'
+import { ImportantInformationSection } from '../components/ImportantInformationSection'
 
 export function HomePage() {
   return <>
@@ -13,6 +14,7 @@ export function HomePage() {
     </section>
     <ImportantEventsSection />
     <MyTripSection />
+    <ImportantInformationSection />
     <PlanRecommendationsSection />
     <section className="journey-selector" id="elige"><div className="section-intro"><p className="eyebrow">Elige tu experiencia</p><h2>¿Cómo quieres vivir Tomorrowland?</h2><p>Dos caminos, una misma forma clara de descubrir qué incluye cada alternativa.</p></div><div className="journey-paths"><JourneyPath to="/planes/1-persona" label="Plan 1 persona" description="Explora alternativas individuales y calcula tu experiencia completa." icon={UserRound} number="01" /><JourneyPath to="/planes/2-personas" label="Plan 2 personas" description="Compara paquetes y alojamientos diseñados para compartir." icon={UsersRound} number="02" /></div></section>
     <section className="how-it-works"><div><p className="eyebrow">Tu decisión, más simple</p><h2>Todo lo importante, en un solo lugar.</h2></div><div className="steps"><article><span>01</span><Compass aria-hidden="true" /><h3>Explora</h3><p>Descubre alternativas oficiales y estimadas sin perder contexto.</p></article><article><span>02</span><Columns3 aria-hidden="true" /><h3>Compara</h3><p>Contrasta precio, alojamiento, transporte e inclusiones.</p></article><article><span>03</span><Sparkles aria-hidden="true" /><h3>Decide</h3><p>Elige la experiencia que mejor encaja contigo.</p></article></div></section>

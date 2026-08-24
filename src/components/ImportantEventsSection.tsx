@@ -1,4 +1,4 @@
-import { ArrowUpRight, Calculator, CalendarDays, Clock3, Megaphone, ShoppingBag, Sparkles, Ticket, type LucideIcon } from 'lucide-react'
+import { ArrowUpRight, Calculator, CalendarDays, Clock3, Megaphone, ShoppingBag, Sparkles, Ticket, Timer, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useImportantEvents } from '../hooks/useImportantEvents'
 import type { ImportantEvent, ImportantEventType } from '../models/importantEvent'
@@ -11,6 +11,7 @@ const eventIcons: Record<ImportantEventType, LucideIcon> = {
   PRE_SALE: ShoppingBag,
   FESTIVAL: Sparkles,
   ANNOUNCEMENT: Megaphone,
+  DEADLINE: Timer,
 }
 
 export function ImportantEventsSection() {

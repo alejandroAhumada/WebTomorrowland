@@ -9,6 +9,8 @@ import { PriceBadge } from './PriceBadge'
 import { ClpConversion } from './ClpConversion'
 import { TravelBudgetSummary } from './TravelBudgetView'
 import { useMyTrip } from '../state/useMyTrip'
+import { useTicketTiers } from '../hooks/useTicketTiers'
+import { getTierOffering } from '../models/ticketTier'
 
 interface PlanCardProps { plan: TravelPlan; selected: boolean; disabled: boolean; onToggle: () => void; onOpenDetails: () => void }
 
@@ -18,6 +20,8 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
   const PlanIcon = plan.category === 'GLOBAL_JOURNEY' ? Plane : plan.dreamVilleIncluded ? TentTree : Ticket
   const TravelersIcon = plan.travelerCount === 1 ? UserRound : UsersRound
   const { isMyPlan } = useMyTrip()
+  const { tiers } = useTicketTiers()
+  const availableTiers = tiers.filter((tier) => getTierOffering(tier, plan.id))
 
   const preventCardAction = (event: MouseEvent) => event.stopPropagation()
   return <article className={`plan-card ${selected ? 'selected' : ''}`} onClick={onOpenDetails}>
@@ -25,6 +29,7 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
     <p className="category">{categoryLabels[plan.category]}</p>
     <h2>{plan.name}</h2>
     <p className="traveler-label"><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</p>
+    {availableTiers.length > 0 && <p className="tier-summary"><span>Modalidades disponibles</span><strong>{availableTiers.map((tier) => tier.name).join(' · ')}</strong></p>}
     <div className="price-block">
       {plan.totalPrice && pricePerPerson ? <>
         <strong>{formatMoney(plan.totalPrice)}</strong><span>Precio total · {plan.totalPrice.currency}</span>

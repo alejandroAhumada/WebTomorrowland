@@ -183,7 +183,24 @@ fuente oficial -> evidencia -> propuesta -> Sync API dry-run
                                       NO_CHANGE/REJECTED/error -> no escribir
 ```
 
-La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. `Research scope` permite elegir `all`, `plans` o `events`. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas aceptadas. El cron usa `all` y el flujo completo. Los logs muestran fuente, hash abreviado, entidad, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. `Research scope` permite elegir `all`, `plans`, `events` o `information`. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas aceptadas. El cron usa `all` y el flujo completo. Los logs muestran fuente, hash abreviado, entidad, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+
+### Ticket tiers e información oficial
+
+`ticketTiers` modela Regular, Comfort y N°1 sin duplicar planes: cada documento contiene beneficios/condiciones generales y una lista explícita de ofertas por `planId`, con su precio BRL oficial o estado pendiente y URL de producto. Nunca se deriva un precio de otro tier ni se extrapola disponibilidad. `importantInformation` conserva condiciones oficiales relevantes que no son planes ni hitos; Treasure Case referencia el acontecimiento accionable `treasure-case-home-delivery-deadline-2027` para que la fecha tenga una sola fuente temporal.
+
+El frontend puede leer ambas colecciones; clientes no pueden escribirlas ni consultar propuestas, estado, historial o `syncRuns`. `syncTomorrowlandContent` es una Function 2nd gen privada, ejecutada con la misma identidad runtime administrativa mínima y solo invocable por `tomorrowland-sync-client`. Valida el documento completo según su dominio, URL oficial, evidencia acotada, observación, regresiones, idempotencia y luego ejecuta una transacción con documento, propuesta, estado, auditoría e historial. No admite DELETE.
+
+El scope `information` del investigador reutiliza el fetch seguro, allowlist, WIF, evidencia y cron actuales. Verifica de forma determinista las páginas Festival Tickets, Easy Tent, Spectacular Easy Tent, Vida Nova y Global Journey. Si falta un precio, beneficio o condición inequívoca, no genera propuestas. Todo candidato pasa primero por `syncTomorrowlandContent?dryRun=true`; solo `CREATED` o `UPDATED` puede reenviarse sin dry-run. `NO_CHANGE`, `REJECTED` y errores no escriben.
+
+El seed inicial es validado, idempotente y nunca elimina documentos desconocidos:
+
+```bash
+npm run seed:official-content
+GOOGLE_APPLICATION_CREDENTIALS=/ruta/segura/service-account.json npm run seed:official-content:write
+```
+
+Para ampliar una modalidad o información: agrega primero el tipo/categoría al modelo, una fuente concreta allowlisted, validación y fixtures deterministas; luego añade el documento seed/extractor. La evidencia ambigua debe producir ausencia de propuesta, no una interpretación aproximada.
 
 La extracción de acontecimientos es determinista y se centra en fechas de ventas y el festival. Reconoce pre-registro, simuladores, ventas, preventas y festival; un hito nuevo solo se crea si tiene nombre, fecha BRT inequívoca y categoría accionable. Cambios editoriales menores y desapariciones se ignoran. Para agregar una categoría o fuente, amplía primero la allowlist/modelo, añade un extractor acotado y fixtures de éxito, ambigüedad, otra edición y ausencia; no conviertas el módulo en un crawler general.
 

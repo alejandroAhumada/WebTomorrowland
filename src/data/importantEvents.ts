@@ -2,6 +2,7 @@ import type { ImportantEvent } from '../models/importantEvent'
 
 const salesSource = 'https://brasil.tomorrowland.com/en/sales/sales-dates/'
 const eventSource = 'https://www.tomorrowland.com/article/tomorrowland-brasil-2027-all-you-need-to-know/'
+const festivalTicketsSource = 'https://brasil.tomorrowland.com/en/tickets/festival-tickets/'
 const traceability = { sourceName: 'Tomorrowland Brasil', verifiedAt: '2026-08-22', updatedAt: '2026-08-22' }
 
 export const initialImportantEvents: ImportantEvent[] = [
@@ -69,6 +70,19 @@ export const initialImportantEvents: ImportantEvent[] = [
     priority: 85,
     isFeatured: true,
     appliesTo: { scope: 'PLAN_CATEGORIES', planCategories: ['SEPARATE_PURCHASE'] },
+    ...traceability,
+  },
+  {
+    id: 'treasure-case-home-delivery-deadline-2027',
+    title: 'Último día para Home Delivery con Treasure Case',
+    description: 'Fecha límite oficial para seleccionar Home Delivery y recibir una Treasure Case; no se publica una hora de cierre.',
+    startsAt: '2026-10-24',
+    timeZone: 'America/Sao_Paulo',
+    type: 'DEADLINE',
+    sourceUrl: festivalTicketsSource,
+    priority: 80,
+    isFeatured: true,
+    appliesTo: { scope: 'ALL' },
     ...traceability,
   },
   {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { EventSyncResponse } from '../functions/src/eventSync'
 import {
   EVENT_RESEARCH_SOURCES, buildEventProposal, createEventSyncApiClient, detectFestivalEvent,
-  detectSalesEvents, eventSourceHash, parseOfficialDate, processEventProposal, researchEventSource,
+  detectSalesEvents, detectTreasureCaseDeadline, eventSourceHash, parseOfficialDate, processEventProposal, researchEventSource,
   type EventSyncApiClient,
 } from './tomorrowlandEventResearch'
 
@@ -41,6 +41,13 @@ describe('investigación determinista de acontecimientos', () => {
     expect(detectFestivalEvent(festivalFixture.replace(/<[^>]+>/g, ' '), EVENT_RESEARCH_SOURCES[1].url)[0]).toMatchObject({
       eventId: 'tomorrowland-brasil-2027', startsAt: '2027-04-30', endsAt: '2027-05-02',
     })
+  })
+
+  it('detecta la fecha civil de Treasure Case sin inventar una hora', () => {
+    const source = EVENT_RESEARCH_SOURCES.find((item) => item.kind === 'TREASURE_CASE')!
+    const events = detectTreasureCaseDeadline('Tomorrowland Brasil 2027. By selecting Home Delivery until October 24, 2026 you will receive a Treasure Case.', source.url)
+    expect(events[0]).toMatchObject({ eventId:'treasure-case-home-delivery-deadline-2027', startsAt:'2026-10-24', type:'DEADLINE' })
+    expect(events[0].startsAt).not.toContain('T')
   })
 
   it('normaliza fecha BRT sin depender del timezone', () => {

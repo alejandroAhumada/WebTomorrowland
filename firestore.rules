@@ -6,6 +6,12 @@ service cloud.firestore {
     match /exchangeRates/{pairId} { allow read: if true; allow write: if false; }
     match /importantEvents/{eventId} { allow read: if true; allow write: if false; }
     match /importantEvents/{eventId}/history/{historyId} { allow read, write: if false; }
+    match /ticketTiers/{tierId} { allow read: if true; allow write: if false; }
+    match /ticketTiers/{tierId}/history/{historyId} { allow read, write: if false; }
+    match /importantInformation/{informationId} { allow read: if true; allow write: if false; }
+    match /importantInformation/{informationId}/history/{historyId} { allow read, write: if false; }
+    match /contentSyncProposals/{proposalId} { allow read, write: if false; }
+    match /contentSyncState/{documentId} { allow read, write: if false; }
     match /eventSyncProposals/{proposalId} { allow read, write: if false; }
     match /eventSyncState/{eventId} { allow read, write: if false; }
     match /planSyncProposals/{proposalId} { allow read, write: if false; }

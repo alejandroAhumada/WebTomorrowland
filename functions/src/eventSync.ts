@@ -5,7 +5,7 @@ import { officialSourceUrl } from './planSync.js'
 const proposalKeys = new Set(['proposalId', 'eventId', 'observedAt', 'source', 'operation', 'changes', 'evidence'])
 const createKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'timeZone', 'type', 'priority', 'isFeatured', 'status', 'appliesTo'])
 const updateKeys = new Set(['title', 'description', 'startsAt', 'endsAt', 'type', 'priority', 'isFeatured', 'status', 'appliesTo'])
-const eventTypes = new Set<ImportantEventType>(['REGISTRATION', 'SIMULATOR', 'SALE', 'PRE_SALE', 'FESTIVAL', 'ANNOUNCEMENT'])
+const eventTypes = new Set<ImportantEventType>(['REGISTRATION', 'SIMULATOR', 'SALE', 'PRE_SALE', 'FESTIVAL', 'ANNOUNCEMENT', 'DEADLINE'])
 
 export type EventSyncOperation = 'CREATE' | 'UPDATE'
 export type EventEvidenceKind = 'CREATE' | 'CONFIRMATION' | 'RESCHEDULE' | 'CANCELLATION'
@@ -194,7 +194,7 @@ function validateImportantCreation(event: ImportantEvent, excerpt: string): void
   if (!event.id.endsWith('-2027')) invalid('Los nuevos IDs deben ser semánticos y terminar en -2027.')
   if (event.startsAt.slice(0, 4) !== '2026' && event.startsAt.slice(0, 4) !== '2027') invalid('El acontecimiento no corresponde al ciclo Brasil 2027.')
   const text = `${event.title} ${event.description} ${excerpt}`
-  if (!/(pre-?registr|simulador|simulator|venta|sale|festival|DreamVille|ticket|anuncio|announcement)/i.test(text)) invalid('El acontecimiento no pertenece a una categoría importante permitida.')
+  if (!/(pre-?registr|simulador|simulator|venta|sale|festival|DreamVille|ticket|anuncio|announcement|deadline|fecha límite|Home Delivery|Treasure Case)/i.test(text)) invalid('El acontecimiento no pertenece a una categoría importante permitida.')
 }
 
 function parseChanges(value: Record<string, unknown>, operation: EventSyncOperation): EventChanges {

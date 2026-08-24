@@ -6,6 +6,8 @@ import { FirestorePlanSyncStore } from './firestorePlanSyncStore.js'
 import { FirestoreEventSyncStore } from './firestoreEventSyncStore.js'
 import { EventProposalValidationError, parseEventSyncProposal, processEventSyncProposal, type EventSyncProposal, type EventSyncResponse } from './eventSync.js'
 import { parsePlanSyncProposal, processPlanSyncProposal, ProposalValidationError, type PlanSyncProposal, type PlanSyncResponse } from './planSync.js'
+import { ContentProposalValidationError, parseContentSyncProposal, processContentSyncProposal, type ContentSyncProposal } from './contentSync.js'
+import { FirestoreContentSyncStore } from './firestoreContentSyncStore.js'
 
 const projectId = 'web-pack-tomorrowland'
 const runtimeServiceAccount = `tomorrowland-sync-api@${projectId}.iam.gserviceaccount.com`
@@ -85,6 +87,26 @@ export const syncTomorrowlandEvent = onRequest({
   }
 })
 
+export const syncTomorrowlandContent = onRequest({
+  region: 'us-central1', memory: '256MiB', timeoutSeconds: 30, maxInstances: 3, concurrency: 10,
+  serviceAccount: runtimeServiceAccount, invoker: [callerServiceAccount],
+}, async (request, response) => {
+  if (request.method !== 'POST') { response.set('Allow', 'POST').status(405).json({ error: 'METHOD_NOT_ALLOWED' }); return }
+  if (!request.is('application/json')) { response.status(415).json({ error: 'UNSUPPORTED_MEDIA_TYPE' }); return }
+  if (Number(request.get('content-length') ?? 0) > 96 * 1024) { response.status(413).json({ error: 'PAYLOAD_TOO_LARGE' }); return }
+  let proposal: ContentSyncProposal | undefined
+  try {
+    proposal = parseContentSyncProposal(request.body)
+    const dryRun = parseContentDryRun(request.query.dryRun)
+    const result = await processContentSyncProposal(new FirestoreContentSyncStore(getFirestore()), proposal, { dryRun, now: () => new Date() })
+    response.status(result.result === 'REJECTED' ? 409 : 200).json(result)
+  } catch (error) {
+    if (error instanceof ContentProposalValidationError) { response.status(400).json({ error: error.code, message: error.message }); return }
+    logger.error('Tomorrowland content sync failed.', { error: sanitizeSyncError(error), proposalId: proposal?.proposalId })
+    response.status(500).json({ error: 'INTERNAL_ERROR', message: 'No fue posible procesar la propuesta.' })
+  }
+})
+
 function parseDryRun(value: unknown): boolean {
   if (value === undefined || value === 'false') return false
   if (value === 'true') return true
@@ -95,6 +117,12 @@ function parseEventDryRun(value: unknown): boolean {
   if (value === undefined || value === 'false') return false
   if (value === 'true') return true
   throw new EventProposalValidationError('INVALID_PROPOSAL', 'dryRun debe ser true o false.')
+}
+
+function parseContentDryRun(value: unknown): boolean {
+  if (value === undefined || value === 'false') return false
+  if (value === 'true') return true
+  throw new ContentProposalValidationError('INVALID_PROPOSAL', 'dryRun debe ser true o false.')
 }
 
 function statusFor(result: PlanSyncResponse): number {

@@ -7,7 +7,7 @@ on:
         description: Private Sync API function to deploy
         required: true
         type: choice
-        options: [syncTomorrowlandEvent, syncTomorrowlandPlan]
+        options: [syncTomorrowlandContent, syncTomorrowlandEvent, syncTomorrowlandPlan]
         default: syncTomorrowlandEvent
 
 permissions:

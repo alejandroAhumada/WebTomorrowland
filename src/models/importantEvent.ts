@@ -1,4 +1,4 @@
-export type ImportantEventType = 'REGISTRATION' | 'SIMULATOR' | 'SALE' | 'PRE_SALE' | 'FESTIVAL' | 'ANNOUNCEMENT'
+export type ImportantEventType = 'REGISTRATION' | 'SIMULATOR' | 'SALE' | 'PRE_SALE' | 'FESTIVAL' | 'ANNOUNCEMENT' | 'DEADLINE'
 export type ImportantEventStatus = 'CANCELLED'
 export type ImportantEventApplicability =
   | { scope: 'ALL' }
@@ -44,7 +44,7 @@ export function validateImportantEvent(event: ImportantEvent): string[] {
   if (event.endsAt && !isValidEventDate(event.endsAt)) errors.push('La fecha de término no es válida.')
   if (event.endsAt && isValidEventDate(event.startsAt) && isValidEventDate(event.endsAt) && comparableTime(event.endsAt) < comparableTime(event.startsAt)) errors.push('La fecha de término no puede ser anterior al inicio.')
   if (event.timeZone !== 'America/Sao_Paulo') errors.push('El acontecimiento debe utilizar la zona horaria de São Paulo.')
-  if (!['REGISTRATION', 'SIMULATOR', 'SALE', 'PRE_SALE', 'FESTIVAL', 'ANNOUNCEMENT'].includes(event.type)) errors.push('El tipo de acontecimiento no es válido.')
+  if (!['REGISTRATION', 'SIMULATOR', 'SALE', 'PRE_SALE', 'FESTIVAL', 'ANNOUNCEMENT', 'DEADLINE'].includes(event.type)) errors.push('El tipo de acontecimiento no es válido.')
   if (!event.sourceName.trim()) errors.push('El acontecimiento requiere una fuente oficial.')
   if (!isOfficialTomorrowlandUrl(event.sourceUrl)) errors.push('La URL debe pertenecer a una fuente oficial de Tomorrowland.')
   if (!Number.isInteger(event.priority) || event.priority < 0) errors.push('La prioridad debe ser un entero no negativo.')

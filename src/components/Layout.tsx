@@ -15,6 +15,6 @@ export function Layout() {
       </nav>
     </header>
     <main><Outlet /></main>
-    <footer><div className="footer-brand"><BrandMark /><span>WebTomorrowland</span></div><p>Herramienta informativa independiente. Tomorrowland y sus marcas pertenecen a sus respectivos titulares.</p></footer>
+    <footer><div className="footer-brand"><BrandMark /><span>WebTomorrowland</span></div><p>Herramienta independiente de planificación e información, no afiliada ni representante de Tomorrowland. Las entradas y paquetes se adquieren exclusivamente en los canales oficiales indicados por Tomorrowland.</p></footer>
   </div>
 }

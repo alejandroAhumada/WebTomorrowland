@@ -11,7 +11,7 @@ export const EVENT_SYNC_API_URL = 'https://synctomorrowlandevent-roe56dc57a-uc.a
 export interface EventResearchSource {
   id: string
   url: string
-  kind: 'SALES' | 'FESTIVAL'
+  kind: 'SALES' | 'FESTIVAL' | 'TREASURE_CASE'
 }
 
 export const EVENT_RESEARCH_SOURCES: EventResearchSource[] = [
@@ -19,6 +19,11 @@ export const EVENT_RESEARCH_SOURCES: EventResearchSource[] = [
     id: 'important-sales-2027',
     url: 'https://brasil.tomorrowland.com/en/sales/sales-dates/',
     kind: 'SALES',
+  },
+  {
+    id: 'treasure-case-deadline-2027',
+    url: 'https://brasil.tomorrowland.com/en/tickets/festival-tickets/',
+    kind: 'TREASURE_CASE',
   },
   {
     id: 'festival-dates-2027',
@@ -71,9 +76,9 @@ export function researchEventSource(
   try {
     const text = pageText(page.html)
     if (!/Tomorrowland\s+Brasil\s+2027/i.test(text)) throw new Error('La fuente no identifica Tomorrowland Brasil 2027.')
-    const detected = source.kind === 'SALES'
-      ? detectSalesEvents(text, page.url)
-      : detectFestivalEvent(text, page.url)
+    const detected = source.kind === 'SALES' ? detectSalesEvents(text, page.url)
+      : source.kind === 'FESTIVAL' ? detectFestivalEvent(text, page.url)
+      : detectTreasureCaseDeadline(text, page.url)
     const notes: string[] = []
     const proposals: EventSyncProposal[] = []
 
@@ -188,6 +193,18 @@ export function detectFestivalEvent(text: string, sourceUrl: string): DetectedIm
     endsAt: end, type: 'FESTIVAL', sourceUrl, excerpt, sourceHash: evidenceHash(excerpt),
     operation: 'UPDATE', evidenceKind: evidenceKind(excerpt),
     appliesTo: { scope: 'ALL' },
+  }]
+}
+
+export function detectTreasureCaseDeadline(text: string, sourceUrl: string): DetectedImportantEvent[] {
+  const match = text.match(/(?:selecting|select)\s+Home Delivery\s+until\s+(October\s+24)(?:,\s*2026)?[^.]{0,180}Treasure Case/i)
+  if (!match) return []
+  const excerpt = evidenceExcerpt(match[0])
+  return [{
+    eventId: 'treasure-case-home-delivery-deadline-2027', title: 'Último día para Home Delivery con Treasure Case',
+    startsAt: parseOfficialDate(`${match[1]}, 2026`), type: 'DEADLINE', sourceUrl, excerpt,
+    sourceHash: evidenceHash(excerpt), operation: knownEvents.has('treasure-case-home-delivery-deadline-2027') ? 'UPDATE' : 'CREATE',
+    evidenceKind: 'CONFIRMATION', appliesTo: { scope: 'ALL' },
   }]
 }
 
@@ -332,7 +349,7 @@ function sourceObservedAt(page: FetchedOfficialPage): string {
   return Number.isFinite(lastModified) ? new Date(lastModified).toISOString() : page.fetchedAt
 }
 function datesDiffer(event: DetectedImportantEvent, known: ImportantEvent): boolean { return event.startsAt !== known.startsAt || event.endsAt !== known.endsAt }
-function defaultPriority(type: ImportantEventType): number { return type === 'FESTIVAL' ? 100 : type === 'SALE' ? 85 : type === 'PRE_SALE' ? 75 : 70 }
+function defaultPriority(type: ImportantEventType): number { return type === 'FESTIVAL' ? 100 : type === 'SALE' ? 85 : type === 'DEADLINE' ? 80 : type === 'PRE_SALE' ? 75 : 70 }
 function validCalendarDate(year: number, month: number, day: number): boolean {
   const date = new Date(Date.UTC(year, month - 1, day))
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
