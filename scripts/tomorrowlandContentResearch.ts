@@ -45,7 +45,7 @@ export function researchOfficialContent(pages: Record<string, FetchedOfficialPag
         extracted[sourceId][tierId] = expected
       }
     }
-    const stableEvidence = { extracted, comfort: evidenceWindow(festivalText,'Comfort Areas'), numberOne:evidenceWindow(festivalText,'N°1'), treasure:evidenceWindow(festivalText,'Home Delivery'), availability:evidenceWindow(pageText(pages['how-to-order'].html),'Subject to availability') }
+    const stableEvidence = { extractorVersion:2, extracted, comfort: evidenceWindow(festivalText,'Comfort Areas'), numberOne:evidenceWindow(festivalText,'N°1'), treasure:evidenceWindow(festivalText,'Home Delivery'), availability:evidenceWindow(pageText(pages['how-to-order'].html),'Subject to availability') }
     const hash = digest(stableEvidence)
     if (hash === previousHash) return { hash, status:'NO_SOURCE_CHANGE', proposals:[], notes:['La evidencia relevante no cambió.'] }
     const observedAt = `${Object.values(pages).map((page) => page.fetchedAt.slice(0,10)).sort().at(-1)}T00:00:00.000Z`
