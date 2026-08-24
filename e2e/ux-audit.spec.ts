@@ -2,13 +2,14 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 
 const artifacts = 'e2e-artifacts'
+const experiencesArtifacts = `${artifacts}/experiences-final`
 const viewports = [
   { name: '375', width: 375, height: 812 }, { name: '390', width: 390, height: 844 },
   { name: '430', width: 430, height: 932 }, { name: '768', width: 768, height: 1024 },
   { name: '1024', width: 1024, height: 768 }, { name: '1440', width: 1440, height: 900 },
 ] as const
 
-test.beforeAll(async () => { await mkdir(artifacts, { recursive: true }) })
+test.beforeAll(async () => { await mkdir(artifacts, { recursive: true }); await mkdir(experiencesArtifacts, { recursive: true }) })
 test.beforeEach(async ({ page }) => { await page.goto('/'); await clearPersonalState(page) })
 
 test('smoke de Home, catálogo y rutas principales', async ({ page }) => {
@@ -117,6 +118,48 @@ test('dialog soporta Escape, foco y controles accesibles', async ({ page }) => {
   await trigger.focus(); await trigger.press('Enter'); const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('button', { name: 'Regular' })).toHaveAttribute('aria-pressed', 'true')
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden(); await expect(trigger).toBeFocused()
+})
+
+test('Experiencias navega, atribuye fuentes y filtra contenido real', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('link', { name: 'Experiencias', exact: true }).click()
+  await expect(page).toHaveURL(/\/experiencias$/)
+  await expect(page.getByRole('link', { name: 'Experiencias', exact: true })).toHaveClass(/active/)
+  await expect(page.getByRole('heading', { name: 'Experiencias', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Tomorrowland Brasil 2025 | Aftermovie' })).toBeVisible()
+  await expect(page.getByText('Contenido oficial').first()).toBeVisible()
+  await expect(page.getByText('Experiencia personal').first()).toBeVisible()
+  const officialLink = page.getByRole('link', { name: 'Ver video' }).first()
+  await expect(officialLink).toHaveAttribute('href', /^https:\/\/www\.youtube\.com\/watch\?v=/)
+  await expect(officialLink).toHaveAttribute('target', '_blank')
+  await expect(officialLink).toHaveAttribute('rel', /noopener/)
+  const arrival = page.getByRole('button', { name: 'Llegada' })
+  await arrival.focus(); await expect(arrival).toBeFocused(); await arrival.press('Enter')
+  await expect(arrival).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText('2 experiencias', { exact: true })).toBeVisible()
+  await expect(page.locator('article.experience-card')).toHaveCount(2)
+  await expectNoOverflow(page)
+  await page.screenshot({ path: `${experiencesArtifacts}/experiences-filter-390.png`, fullPage: true })
+})
+
+test('Experiencias y el header no presentan overflow en seis viewports', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.goto('/experiencias')
+  await expect(page.getByRole('heading', { name: 'Experiencias', level: 1 })).toBeVisible()
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport)
+    await expectNoOverflow(page)
+    await expectElementNoOverflow(page.locator('.site-header'))
+    await expect(page.getByRole('link', { name: 'WebTomorrowland, inicio' })).toBeVisible()
+    await expect(page.locator('.compare-nav span')).toBeVisible()
+    if (viewport.name === '390' || viewport.name === '1440') {
+      await page.screenshot({ path: `${experiencesArtifacts}/experiences-${viewport.name}.png`, fullPage: true })
+      await page.screenshot({ path: `${experiencesArtifacts}/header-with-experiences-${viewport.name}.png`, clip: { x: 0, y: 0, width: viewport.width, height: 90 } })
+      if (viewport.name === '390') await page.screenshot({ path: `${experiencesArtifacts}/experiences-above-fold-390.png` })
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/'); await expectNoOverflow(page)
+  await page.screenshot({ path: `${experiencesArtifacts}/home-with-experiences-header-390.png`, clip: { x: 0, y: 0, width: 390, height: 90 } })
 })
 
 function card(page: Page, name: string) { return page.locator('article.plan-card').filter({ has: page.getByRole('heading', { name, exact: true }) }) }

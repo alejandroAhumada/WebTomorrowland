@@ -11,6 +11,7 @@ export function Layout() {
       <nav aria-label="Navegación principal">
         <NavLink to="/planes/1-persona">Plan 1</NavLink>
         <NavLink to="/planes/2-personas">Plan 2</NavLink>
+        <NavLink to="/experiencias">Experiencias</NavLink>
         <NavLink className="compare-nav" to="/comparar"><Columns3 aria-hidden="true" />Comparar <span>{selectedIds.length}</span></NavLink>
       </nav>
     </header>
