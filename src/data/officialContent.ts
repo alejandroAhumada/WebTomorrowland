@@ -10,13 +10,13 @@ const vidaNova = 'https://brasil.tomorrowland.com/en/tickets/ticket-accommodatio
 const globalJourney = 'https://brasil.tomorrowland.com/en/tickets/global-journey/hotel-packages/'
 const howToOrder = 'https://brasil.tomorrowland.com/en/sales/how-to-order-your-tickets/'
 
-function offering(planId: string, sourceUrl: string, amount: number | null): TicketTierOffering {
-  return { planId, available: true, totalPrice: amount === null ? null : { amount, currency: 'BRL' }, priceType: amount === null ? null : 'OFFICIAL', sourceUrl }
+function offering(planId: string, sourceUrl: string, amount: number | null, available = true): TicketTierOffering {
+  return { planId, available, totalPrice: amount === null ? null : { amount, currency: 'BRL' }, priceType: amount === null ? null : 'OFFICIAL', sourceUrl }
 }
 
 const planOfferings = (amounts: { full1: number; vida: number; easy: number; spectacular: number }): TicketTierOffering[] => [
   offering('full-madness-1p-2027', festivalTickets, amounts.full1),
-  offering('full-madness-2p-2027', festivalTickets, null),
+  offering('full-madness-2p-2027', festivalTickets, null, false),
   offering('vida-nova-2p-2027', vidaNova, amounts.vida),
   offering('easy-tent-2p-2027', easyTent, amounts.easy),
   offering('spectacular-easy-tent-2p-2027', spectacular, amounts.spectacular),
