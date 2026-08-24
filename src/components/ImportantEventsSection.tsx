@@ -14,26 +14,26 @@ const eventIcons: Record<ImportantEventType, LucideIcon> = {
   DEADLINE: Timer,
 }
 
-export function ImportantEventsSection() {
+export function ImportantEventsSection({ compact = false }: { compact?: boolean }) {
   const state = useImportantEvents()
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
     return () => window.clearInterval(timer)
   }, [])
-  return <ImportantEventsView {...state} now={now} />
+  return <ImportantEventsView {...state} now={now} compact={compact} />
 }
 
-export function ImportantEventsView({ events, loading, error, now }: { events: ImportantEvent[]; loading: boolean; error: string | null; now: Date }) {
+export function ImportantEventsView({ events, loading, error, now, compact = false }: { events: ImportantEvent[]; loading: boolean; error: string | null; now: Date; compact?: boolean }) {
   if (loading) return <section className="important-events events-loading" aria-label="Cargando novedades y fechas clave"><span /></section>
   if (error) return <section className="important-events events-unavailable"><CalendarDays aria-hidden="true" /><p>{error}</p></section>
   if (events.length === 0) return null
 
   const nextEvent = getNextImportantEvent(events, now)
-  return <section className="important-events" aria-labelledby="important-events-title">
-    <div className="events-heading"><div><p className="eyebrow">Novedades y fechas clave</p><h2 id="important-events-title">El camino hacia Brasil 2027</h2></div><p>Hitos oficiales para saber qué viene y cuándo actuar.</p></div>
-    {nextEvent && <FeaturedEvent event={nextEvent} now={now} />}
-    <ol className="events-timeline">{events.map((event) => <TimelineEvent key={event.id} event={event} now={now} featured={event.id === nextEvent?.id} />)}</ol>
+  return <section className={`important-events ${compact ? 'compact' : ''}`} aria-labelledby="important-events-title">
+    <div className="events-heading"><div><p className="eyebrow">{compact ? 'Fechas oficiales' : 'Próximo hito'}</p><h2 id="important-events-title">{compact ? 'Calendario de Tomorrowland' : 'Lo próximo hacia Brasil 2027'}</h2></div><p>{compact ? 'Consulta el calendario global cuando lo necesites.' : 'El siguiente momento oficial que conviene tener presente.'}</p></div>
+    {!compact && nextEvent && <FeaturedEvent event={nextEvent} now={now} />}
+    <details className="events-calendar-disclosure"><summary>Ver todas las fechas</summary><ol className="events-timeline">{events.map((event) => <TimelineEvent key={event.id} event={event} now={now} featured={event.id === nextEvent?.id} />)}</ol></details>
   </section>
 }
 

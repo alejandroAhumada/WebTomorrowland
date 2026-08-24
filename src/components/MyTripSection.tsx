@@ -14,19 +14,21 @@ import { formatImportantEventDate, getDaysUntilEvent } from '../utils/importantE
 import { buildTripTimeline, type TripTimelineEntry } from '../utils/tripTimeline'
 import { formatMoney } from '../utils/format'
 import { AvailabilityBadge } from './AvailabilityBadge'
-import { ClpConversion } from './ClpConversion'
 import { PlanDetailDialog } from './PlanDetailDialog'
 import { PriceBadge } from './PriceBadge'
 import { PersonalTripPreparation } from './PersonalTripPreparation'
 import { calculateExecutedTravelBudget } from '../models/executedTravelBudget'
 import { useTripPreparation } from '../state/useTripPreparation'
-import { ExecutedBudgetSummary } from './ExecutedBudgetView'
+import { ExecutedBudgetBreakdown } from './ExecutedBudgetView'
 import { useTicketTiers } from '../hooks/useTicketTiers'
 import { planForTierBudget, resolvePlanTierOption } from '../models/planCatalog'
+import { budgetItemTotalMoney } from '../models/travelBudget'
+import { buildPersonalTripTasks } from '../models/personalTripTask'
+import { TravelBudgetBreakdown } from './TravelBudgetView'
 
 export function MyTripSection() {
   const { selectedPlanId } = useMyTrip()
-  if (!selectedPlanId) return <section className="my-trip-invitation" aria-label="Mi viaje"><Bookmark aria-hidden="true" /><p><strong>Comienza a organizar tu viaje</strong>Abre el detalle de una alternativa y elige “Elegir como mi plan”.</p></section>
+  if (!selectedPlanId) return null
   return <SelectedMyTrip selectedPlanId={selectedPlanId} />
 }
 
@@ -61,6 +63,11 @@ export function MyTripDashboard({ plan, events, eventsLoading = false, now = new
   const timeline = buildTripTimeline(plan, events, now)
   const comparisonFull = isFull && !isSelected(plan.id)
   const executed = calculateExecutedTravelBudget(budget, preparation.plans[plan.id] ?? {})
+  const tasks = buildPersonalTripTasks(plan)
+  const completedTasks = tasks.filter((task) => preparation.plans[plan.id]?.[task.id]?.completed).length
+  const tomorrowlandItem = budget.items.find((item) => item.category === 'TOMORROWLAND')
+  const tomorrowlandClp = tomorrowlandItem ? budgetItemTotalMoney(tomorrowlandItem) : null
+  const primaryEntry = timeline.entries.find((entry) => entry.isPrimary)
 
   const compare = () => {
     if (!isSelected(plan.id)) toggle(plan.id)
@@ -68,7 +75,22 @@ export function MyTripDashboard({ plan, events, eventsLoading = false, now = new
   }
 
   const missingBudgetLabel = budget.pendingReason === 'PLAN_PRICE' ? 'Pendiente de precio oficial' : budget.pendingReason === 'CONVERSION' ? 'Presupuesto CLP no disponible' : 'Presupuesto pendiente'
-  return <section className="my-trip-section" aria-labelledby="my-trip-title"><div className="my-trip-label"><Bookmark aria-hidden="true" /><span>Mi viaje</span><small>Alternativa seleccionada para planificación</small></div><div className="my-trip-grid"><article className="my-trip-plan"><p>Plan elegido</p><h2 id="my-trip-title">{plan.name}</h2><span><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</span><small>Tomorrowland Brasil 2027 · 30 abril–2 mayo</small>{tierOption && <small className="considered-tier">Modalidad considerada: <strong>{tierOption.tier.name}</strong>{tierOption.priceNature === 'DERIVED' ? ' · cálculo derivado' : ''}</small>}<div><PriceBadge type={planningPlan.priceType} /><AvailabilityBadge status={plan.status} /></div></article><article className="my-trip-budget"><p>{tierOption?.priceNature === 'DERIVED' ? 'Cálculo Tomorrowland para 2 personas' : 'Precio Tomorrowland'}</p>{planningPlan.totalPrice ? <><strong>{formatMoney(planningPlan.totalPrice)}</strong>{tierOption?.priceNature === 'DERIVED' && tierOption.unitPrice && <span>{tierOption.multiplier} × {formatMoney(tierOption.unitPrice)} individual</span>}<ClpConversion money={planningPlan.totalPrice} compact /></> : <strong className="pending">Pendiente</strong>}<hr /><p>Presupuesto completo estimado</p>{budgetLoading ? <strong className="pending">Calculando…</strong> : budget.total && budget.totalPerPerson ? <><strong>≈ {formatMoney(budget.total)}</strong><span>≈ {formatMoney(budget.totalPerPerson)} por persona</span></> : <><strong className="pending">{missingBudgetLabel}</strong>{budget.pendingReason === 'CONVERSION' && <span>Conversión CLP no disponible</span>}</>}<small>{customized ? 'Presupuesto personalizado' : 'Estimaciones referenciales'}</small><ExecutedBudgetSummary executed={executed} /></article></div><MyTripTimeline entries={timeline.entries} loading={eventsLoading} now={now} /><PersonalTripPreparation plan={plan} budget={budget} /><div className="my-trip-actions"><button className="button" type="button" onClick={() => setDialogMode('DETAIL')}><Eye aria-hidden="true" />Ver mi plan</button><button className="button secondary" type="button" onClick={() => setDialogMode('BUDGET')}><SlidersHorizontal aria-hidden="true" />Ajustar presupuesto</button><button className="button secondary" type="button" onClick={compare} disabled={comparisonFull} title={comparisonFull ? 'La comparación ya tiene tres alternativas.' : undefined}><Columns3 aria-hidden="true" />{comparisonFull ? 'Comparación llena' : 'Comparar'}</button></div><p className="my-trip-disclaimer">La modalidad considerada se usa solo para planificación. No representa una compra, reserva, disponibilidad garantizada ni entrada confirmada. Las compras se realizan exclusivamente en los canales oficiales de Tomorrowland.</p>{dialogMode && <PlanDetailDialog plan={plan} openBudgetEditor={dialogMode === 'BUDGET'} onClose={() => setDialogMode(null)} />}</section>
+  const travelValue = executed.projectedTotalPerPerson ?? budget.totalPerPerson
+  return <section className="my-trip-section compact-dashboard" aria-labelledby="my-trip-title">
+    <div className="my-trip-label"><Bookmark aria-hidden="true" /><span>Mi viaje</span><small>Tu alternativa para planificar</small></div>
+    <div className="my-trip-overview">
+      <article className="my-trip-plan"><p>Plan elegido</p><h2 id="my-trip-title">{plan.name}</h2><span><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</span>{tierOption && <small className="considered-tier">Modalidad para planificar: <strong>{tierOption.tier.name}</strong></small>}<div><PriceBadge type={planningPlan.priceType} /><AvailabilityBadge status={plan.status} /></div></article>
+      <article className="my-trip-milestone"><p>Próximo hito</p>{eventsLoading ? <strong>Consultando fechas…</strong> : primaryEntry ? <><strong>{primaryEntry.event.title}</strong><time dateTime={primaryEntry.event.startsAt}>{formatImportantEventDate(primaryEntry.event)}</time>{primaryEntry.state === 'UPCOMING' && <small>Faltan {getDaysUntilEvent(primaryEntry.event, now)} días</small>}</> : <strong>No hay nuevos hitos oficiales</strong>}</article>
+      <article className="my-trip-money"><p>{tierOption?.priceNature === 'DERIVED' ? 'Equivalencia del cálculo' : 'Equivalencia del producto'}</p>{tomorrowlandClp ? <strong className="my-trip-clp">≈ {formatMoney(tomorrowlandClp)} CLP</strong> : <strong className="pending">Equivalencia CLP no disponible</strong>}{planningPlan.totalPrice ? <span>{formatMoney(planningPlan.totalPrice)} · {tierOption?.priceNature === 'DERIVED' ? 'cálculo para 2 personas' : 'precio oficial Tomorrowland'}</span> : <span>Precio aún no publicado</span>}<hr /><p>{executed.projectedTotalPerPerson ? 'Viaje proyectado' : 'Viaje estimado'}</p>{budgetLoading ? <strong>Calculando…</strong> : travelValue ? <strong>≈ {formatMoney(travelValue)} <small>por persona</small></strong> : <strong className="pending">{missingBudgetLabel}</strong>}<small>{customized ? 'Presupuesto personalizado' : 'Estimaciones referenciales'} · Preparación {completedTasks}/{tasks.length}</small>{executed.actualPaid && <span>Pagado registrado: {formatMoney(executed.actualPaid)}</span>}{executed.actualPaid && !executed.projectedTotal && <span>Presupuesto total pendiente del precio oficial o de la conversión CLP.</span>}</article>
+    </div>
+    <div className="my-trip-actions"><button className="button" type="button" onClick={() => setDialogMode('DETAIL')}><Eye aria-hidden="true" />Ver mi plan</button><button className="button secondary" type="button" onClick={() => setDialogMode('BUDGET')}><SlidersHorizontal aria-hidden="true" />Ajustar presupuesto</button><button className="my-trip-compare-link" type="button" onClick={compare} disabled={comparisonFull} title={comparisonFull ? 'Ya elegiste tres alternativas.' : undefined}><Columns3 aria-hidden="true" />{comparisonFull ? 'Ya elegiste 3 alternativas' : 'Comparar otra alternativa'}</button></div>
+    <div className="my-trip-disclosures">
+      <details className="my-trip-disclosure"><summary>Ver mi ruta</summary><MyTripTimeline entries={timeline.entries} loading={eventsLoading} now={now} /></details>
+      <PersonalTripPreparation plan={plan} budget={budget} />
+      <details className="my-trip-disclosure"><summary>Ver presupuesto</summary><TravelBudgetBreakdown budget={budget} loading={budgetLoading} /><ExecutedBudgetBreakdown executed={executed} /></details>
+    </div>
+    <p className="my-trip-disclaimer">No representa una compra, reserva, disponibilidad garantizada ni entrada confirmada. Esta selección sirve solo para planificar; las compras se realizan exclusivamente en los canales oficiales de Tomorrowland.</p>{dialogMode && <PlanDetailDialog plan={plan} openBudgetEditor={dialogMode === 'BUDGET'} onClose={() => setDialogMode(null)} />}
+  </section>
 }
 
 function MyTripTimeline({ entries, loading, now }: { entries: TripTimelineEntry[]; loading: boolean; now: Date }) {

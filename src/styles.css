@@ -314,3 +314,70 @@ footer { min-height: 120px; padding: 30px max(24px, calc((100vw - var(--content-
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* Adaptive Home: decision first for new visitors, planning first for returning visitors. */
+.home-hero { min-height: 660px; }
+.home-hero .hero-copy { padding-block: 72px 48px; }
+.home-hero .hero-art { min-height: 520px; }
+.events-calendar-disclosure,.information-disclosure,.my-trip-disclosure { margin-top: 24px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: rgba(255,255,255,.025); }
+.events-calendar-disclosure > summary,.information-disclosure > summary,.my-trip-disclosure > summary { min-height: 52px; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; color: var(--color-gold-soft); cursor: pointer; font-size: .72rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.events-calendar-disclosure > summary::after,.information-disclosure > summary::after,.my-trip-disclosure > summary::after { content:'+'; font-size: 1.1rem; }
+.events-calendar-disclosure[open] > summary::after,.information-disclosure[open] > summary::after,.my-trip-disclosure[open] > summary::after { content:'−'; }
+.events-calendar-disclosure .events-timeline { margin: 0; padding: 34px 24px 24px; }
+.important-events.compact { padding-block: 62px; }
+.important-events.compact .events-heading { margin-bottom: 0; }
+.important-information .information-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.information-disclosure { max-width: var(--content-width); margin-inline: auto; }
+.information-disclosure .information-grid { padding: 0 20px 20px; }
+.recommendations-section.secondary { padding-block: 72px; background: var(--color-background-deep); }
+.recommendations-section.secondary .recommendations-heading h2 { font-size: clamp(2.5rem,4vw,4rem); }
+.journey-selector.secondary { padding-block: 70px; }
+.journey-selector.secondary .journey-card { min-height: 270px; }
+.my-trip-section.compact-dashboard { padding-block: 62px; }
+.my-trip-overview { display: grid; grid-template-columns: 1.1fr .9fr 1.15fr; border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; background: var(--color-surface); box-shadow: var(--shadow-card); }
+.my-trip-overview article { min-width: 0; padding: 28px; border-right: 1px solid rgba(255,255,255,.07); }
+.my-trip-overview article:last-child { border-right: 0; }
+.my-trip-overview article > p { margin: 0 0 10px; color: var(--color-gold); font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.my-trip-overview article > strong { display: block; overflow-wrap: anywhere; }
+.my-trip-overview .my-trip-plan h2 { margin-bottom: 12px; font-size: clamp(2rem,3vw,3.2rem); }
+.my-trip-milestone time,.my-trip-milestone small,.my-trip-money > span,.my-trip-money > small { margin-top: 8px; display: block; color: var(--color-text-muted); font-size: .72rem; line-height: 1.45; }
+.my-trip-clp { color: white; font-family: var(--font-display); font-size: clamp(1.8rem,2.6vw,2.8rem); line-height: 1; }
+.my-trip-money hr { margin: 20px 0; border: 0; border-top: 1px solid rgba(255,255,255,.08); }
+.my-trip-money > strong:not(.my-trip-clp) { color: white; font-family: var(--font-display); font-size: 1.55rem; }
+.my-trip-money strong small { font-family: var(--font-body); font-size: .62rem; font-weight: 500; }
+.my-trip-actions { align-items: center; }
+.my-trip-compare-link { min-height: 44px; padding: 8px 10px; display: inline-flex; align-items: center; gap: 7px; border: 0; color: var(--color-gold-soft); background: transparent; cursor: pointer; font: inherit; font-size: .72rem; text-decoration: underline; text-underline-offset: 4px; }
+.my-trip-compare-link svg { width: 16px; }
+.my-trip-compare-link:disabled { opacity: .55; cursor: not-allowed; }
+.my-trip-disclosures { display: grid; gap: 12px; }
+.my-trip-disclosure { margin-top: 0; }
+.my-trip-disclosure .my-trip-timeline,.my-trip-disclosure .budget-breakdown,.my-trip-disclosure .executed-breakdown { margin: 0 16px 16px; }
+.my-trip-section .trip-preparation { margin-top: 0; }
+
+@media (max-width: 960px) {
+  .my-trip-overview { grid-template-columns: 1fr; }
+  .my-trip-overview article { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .my-trip-overview article:last-child { border-bottom: 0; }
+}
+@media (max-width: 650px) {
+  .home-hero { min-height: auto; }
+  .home-hero .hero-copy { padding: 52px 18px 20px; }
+  .home-hero .hero-art { min-height: 205px; }
+  .home-hero .portal { width: 165px; }
+  .home-hero .hero-orbit { width: 215px; }
+  .home-hero .orbit-two { width: 270px; }
+  .home-hero .hero-scroll { margin-top: 20px; }
+  .important-events,.important-events.compact { padding-block: 54px 58px; }
+  .events-heading h2 { font-size: 2.35rem; }
+  .featured-copy h3 { font-size: 1.75rem; }
+  .events-calendar-disclosure .events-timeline { padding: 28px 12px 8px; }
+  .important-information .information-grid { grid-template-columns: 1fr; }
+  .recommendations-section.secondary { padding-block: 58px; }
+  .journey-selector,.journey-selector.secondary { padding-block: 58px 64px; }
+  .journey-card,.journey-selector.secondary .journey-card { min-height: 250px; }
+  .my-trip-section.compact-dashboard { padding-block: 46px; }
+  .my-trip-overview article { padding: 21px; }
+  .my-trip-actions { display: grid; grid-template-columns: 1fr; }
+  .my-trip-actions .button,.my-trip-compare-link { width: 100%; justify-content: center; }
+  .my-trip-disclosure .my-trip-timeline,.my-trip-disclosure .budget-breakdown,.my-trip-disclosure .executed-breakdown { margin-inline: 8px; }
+}

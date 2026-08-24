@@ -18,7 +18,7 @@ const criterionContent: Record<PlanRecommendationCriterion, { label: string; ico
   LOWEST_BUDGET_WITH_ACCOMMODATION: { label: 'Alojamiento incluido', icon: Hotel },
 }
 
-export function PlanRecommendationsSection() {
+export function PlanRecommendationsSection({ secondary = false }: { secondary?: boolean }) {
   const [travelerCount, setTravelerCount] = useState<1 | 2>(2)
   const [detailed, setDetailed] = useState<PlanRecommendation['plan'] | null>(null)
   const { recommendations, loading, error, customized } = usePlanRecommendations(travelerCount)
@@ -27,8 +27,8 @@ export function PlanRecommendationsSection() {
   const { isMyPlan } = useMyTrip()
   const compareIds = recommendations.map((item) => item.plan.id)
 
-  return <section className="recommendations-section" aria-labelledby="recommendations-title">
-    <div className="recommendations-heading"><div><p className="eyebrow">Criterios para decidir</p><h2 id="recommendations-title">¿Qué opción te conviene mirar primero?</h2><p>Comparamos datos objetivos. La decisión final siempre es tuya.</p></div><div className="traveler-switch" role="group" aria-label="Cantidad de viajeros"><button type="button" aria-pressed={travelerCount === 1} onClick={() => setTravelerCount(1)}><UserRound aria-hidden="true" />1 persona</button><button type="button" aria-pressed={travelerCount === 2} onClick={() => setTravelerCount(2)}><UsersRound aria-hidden="true" />2 personas</button></div></div>
+  return <section className={`recommendations-section ${secondary ? 'secondary' : ''}`} aria-labelledby="recommendations-title">
+    <div className="recommendations-heading"><div><p className="eyebrow">{secondary ? 'Si quieres comparar' : 'Criterios para decidir'}</p><h2 id="recommendations-title">{secondary ? 'Otras alternativas' : '¿Qué opción te conviene mirar primero?'}</h2><p>{secondary ? 'Opciones calculadas con los mismos criterios y tu presupuesto actual.' : 'Comparamos datos objetivos. La decisión final siempre es tuya.'}</p></div><div className="traveler-switch" role="group" aria-label="Cantidad de viajeros"><button type="button" aria-pressed={travelerCount === 1} onClick={() => setTravelerCount(1)}><UserRound aria-hidden="true" />1 persona</button><button type="button" aria-pressed={travelerCount === 2} onClick={() => setTravelerCount(2)}><UsersRound aria-hidden="true" />2 personas</button></div></div>
     <p className="recommendation-basis">{customized ? 'Basado en tu presupuesto personalizado' : 'Basado en estimaciones referenciales'}</p>
     {loading && <p className="recommendations-notice">Calculando alternativas con precio conocido…</p>}
     {!loading && error && <p className="recommendations-notice error" role="alert">No pudimos calcular recomendaciones en este momento.</p>}

@@ -14,7 +14,8 @@ test.beforeEach(async ({ page }) => { await page.goto('/'); await clearPersonalS
 test('smoke de Home, catálogo y rutas principales', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Tomorrowland/i, level: 1 })).toBeVisible()
   await waitForHomeData(page)
-  await expect(page.getByText('Novedades y fechas clave', { exact: true })).toBeVisible()
+  await expect(page.getByText('Próximo hito', { exact: true }).first()).toBeVisible()
+  await expect(page.locator('.events-calendar-disclosure')).not.toHaveAttribute('open', '')
   await expect(page.getByRole('heading', { name: /Información importante/i })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Qué opción te conviene/i })).toBeVisible()
   await page.goto('/planes/1-persona'); await expect(page.locator('article.plan-card')).toHaveCount(2)
@@ -55,9 +56,15 @@ test('Mi Viaje persiste modalidad y BudgetPreferences', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Elegir como mi plan' }).click()
   await dialog.getByRole('button', { name: 'Cerrar detalle' }).click(); await page.goto('/')
   await expect(page.locator('.my-trip-section').getByText('Easy Tent 2P', { exact: true })).toBeVisible()
-  await expect(page.locator('.my-trip-section').getByText(/Modalidad considerada:/)).toContainText('Comfort')
-  await page.reload(); await expect(page.locator('.my-trip-section').getByText(/Modalidad considerada:/)).toContainText('Comfort')
-  await page.screenshot({ path: `${artifacts}/my-trip-390.png`, fullPage: true })
+  await expect(page.locator('.my-trip-section').getByText(/Modalidad para planificar:/)).toContainText('Comfort')
+  await expect(page.locator('.my-trip-disclosure').first()).not.toHaveAttribute('open', '')
+  await expect(page.locator('.trip-preparation details')).not.toHaveAttribute('open', '')
+  await expect(page.locator('.my-trip-disclosure').last()).not.toHaveAttribute('open', '')
+  await page.reload(); await expect(page.locator('.my-trip-section').getByText(/Modalidad para planificar:/)).toContainText('Comfort')
+  await page.screenshot({ path: `${artifacts}/ux-phase-2-final-home-mytrip-390.png`, fullPage: true })
+  await page.setViewportSize({ width: 1440, height: 900 }); await expectNoOverflow(page)
+  await page.screenshot({ path: `${artifacts}/ux-phase-2-final-home-mytrip-1440.png`, fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('button', { name: 'Ajustar presupuesto' }).click()
   const budgetDialog = page.getByRole('dialog'); const flight = budgetDialog.getByLabel('Vuelo')
   const before = await budgetTotal(budgetDialog); await flight.fill('520000')
@@ -92,10 +99,10 @@ test('comparador funciona en mobile y desktop', async ({ page }) => {
 
 test('seis viewports no presentan overflow y generan capturas', async ({ page }) => {
   test.setTimeout(120_000)
-  await page.goto('/'); await waitForHomeData(page); await expect(page.getByText('Novedades y fechas clave', { exact: true })).toBeVisible()
+  await page.goto('/'); await waitForHomeData(page); await expect(page.getByText('Próximo hito', { exact: true }).first()).toBeVisible()
   for (const viewport of viewports) {
     await page.setViewportSize(viewport); await expectNoOverflow(page)
-    if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: `${artifacts}/home-${viewport.name}.png`, fullPage: true })
+    if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: `${artifacts}/ux-phase-2-final-home-new-user-${viewport.name}.png`, fullPage: true })
   }
   await page.goto('/planes/2-personas'); await expect(page.locator('article.plan-card').first()).toBeVisible()
   await expect(page.locator('.decision-clp').nth(1)).toContainText(/≈ \$/)
@@ -123,7 +130,7 @@ async function expectPageAtHorizontalOrigin(page: Page) { expect(await page.eval
 async function clearPersonalState(page: Page) { await page.evaluate(() => { for (const key of Object.keys(localStorage)) if (key.startsWith('webtomorrowland:')) localStorage.removeItem(key) }); await page.reload() }
 async function waitForHomeData(page: Page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    if (await page.getByText('Novedades y fechas clave', { exact: true }).count()) return
+    if (await page.getByText('Próximo hito', { exact: true }).count()) return
     await page.waitForTimeout(1500); await page.reload()
   }
 }
