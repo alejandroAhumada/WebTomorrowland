@@ -67,7 +67,7 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_TOMORROWLAND_RESEARCH_WIF_PROVIDER }}
           service_account: tomorrowland-sync-client@web-pack-tomorrowland.iam.gserviceaccount.com
           token_format: id_token
-          id_token_audience: https://us-central1-web-pack-tomorrowland.cloudfunctions.net/syncTomorrowlandContent
+          id_token_audience: https://synctomorrowlandcontent-roe56dc57a-uc.a.run.app
       - name: Research and validate official sources
         env:
           PLAN_SYNC_API_ID_TOKEN: ${{ steps.auth_plan.outputs.id_token }}

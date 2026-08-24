@@ -5,7 +5,7 @@ import type { TicketTier } from '../src/models/ticketTier'
 import type { FetchedOfficialPage } from './tomorrowlandResearch'
 import { parseBrlAmount } from './tomorrowlandResearch'
 
-export const CONTENT_SYNC_API_URL = 'https://us-central1-web-pack-tomorrowland.cloudfunctions.net/syncTomorrowlandContent'
+export const CONTENT_SYNC_API_URL = 'https://synctomorrowlandcontent-roe56dc57a-uc.a.run.app'
 export const CONTENT_RESEARCH_SOURCES = [
   { id:'festival-tickets', url:'https://brasil.tomorrowland.com/en/tickets/festival-tickets/' },
   { id:'easy-tent-2p', url:'https://brasil.tomorrowland.com/en/tickets/ticket-accommodation/dreamville-packages/easy-tent-packages/easy-tent-package/' },
