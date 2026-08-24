@@ -4,7 +4,7 @@ import type { PriceType } from '../models/plan'
 const priceTypeLabels = {
   OFFICIAL: 'Precio oficial',
   ESTIMATED: 'Precio estimado',
-  PENDING: 'Precio pendiente',
+  PENDING: 'Precio aún no publicado',
 } as const
 
 export function PriceBadge({ type }: { type: PriceType | null }) {

@@ -6,7 +6,7 @@ describe('PriceBadge', () => {
   it.each([
     ['OFFICIAL', 'Precio oficial'],
     ['ESTIMATED', 'Precio estimado'],
-    [null, 'Precio pendiente'],
+    [null, 'Precio aún no publicado'],
   ] as const)('presenta %s en español con texto accesible', (type, label) => {
     const markup = renderToStaticMarkup(<PriceBadge type={type} />)
     expect(markup).toContain(label)

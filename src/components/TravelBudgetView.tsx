@@ -23,9 +23,9 @@ const budgetIcons: Record<BudgetCategory, LucideIcon> = {
 }
 
 export function TravelBudgetSummary({ budget, loading = false }: { budget: TravelBudget; loading?: boolean }) {
-  if (loading) return <div className="budget-summary compact"><span>Presupuesto completo estimado</span><strong>Calculando…</strong></div>
-  if (!budget.totalPerPerson) return <div className="budget-summary compact pending"><span>Presupuesto completo estimado</span><strong>{budget.pendingReason === 'PLAN_PRICE' ? 'Disponible al publicarse el precio' : budget.pendingReason === 'CONVERSION' ? 'Conversión CLP no disponible' : 'Falta una estimación'}</strong></div>
-  return <div className="budget-summary compact"><span>Presupuesto completo estimado</span><strong>≈ {formatMoney(budget.totalPerPerson)} <small>por persona</small></strong></div>
+  if (loading) return <div className="budget-summary compact"><span>Viaje estimado</span><strong>Calculando…</strong></div>
+  if (!budget.totalPerPerson) return <div className="budget-summary compact pending"><span>Viaje estimado</span><strong>{budget.pendingReason === 'PLAN_PRICE' ? 'Disponible al publicarse el precio' : budget.pendingReason === 'CONVERSION' ? 'Equivalencia CLP no disponible' : 'Falta una estimación'}</strong></div>
+  return <div className="budget-summary compact"><span>Viaje estimado</span><strong>≈ {formatMoney(budget.totalPerPerson)} <small>por persona</small></strong></div>
 }
 
 export function TravelBudgetBreakdown({ budget, loading = false }: { budget: TravelBudget; loading?: boolean }) {

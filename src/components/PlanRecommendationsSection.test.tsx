@@ -22,11 +22,11 @@ const recommendation: PlanRecommendation = {
 describe('sección de recomendaciones', () => {
   it('muestra criterio, métricas, estado y acción de detalle', () => {
     const markup = renderToStaticMarkup(<RecommendationCard recommendation={recommendation} onOpen={() => undefined} />)
-    expect(markup).toContain('Menor presupuesto completo')
+    expect(markup).toContain('Menor viaje estimado')
     expect(markup).toContain('$1.467.000')
-    expect(markup).toContain('BRL 3.805')
+    expect(markup).toContain('R$ 3.805')
     expect(markup).toContain('Precio oficial')
-    expect(markup).toContain('Ver detalles')
+    expect(markup).toContain('Ver plan')
   })
 
   it('Home incluye selector accesible, loading e indicador personalizado', () => {

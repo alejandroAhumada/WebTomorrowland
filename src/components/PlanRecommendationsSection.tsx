@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlanRecommendations } from '../hooks/usePlanRecommendations'
+import { useExchangeRate } from '../hooks/useExchangeRate'
+import { convertMoney } from '../models/exchangeRate'
 import type { PlanRecommendation, PlanRecommendationCriterion, RecommendationHighlight } from '../models/planRecommendation'
 import { useSelection } from '../state/useSelection'
 import { formatMoney } from '../utils/format'
@@ -11,7 +13,7 @@ import { PriceBadge } from './PriceBadge'
 import { useMyTrip } from '../state/useMyTrip'
 
 const criterionContent: Record<PlanRecommendationCriterion, { label: string; icon: LucideIcon }> = {
-  LOWEST_TRIP_BUDGET: { label: 'Menor presupuesto completo', icon: WalletCards },
+  LOWEST_TRIP_BUDGET: { label: 'Menor viaje estimado', icon: WalletCards },
   LOWEST_TOMORROWLAND_PRICE: { label: 'Menor precio Tomorrowland', icon: Ticket },
   LOWEST_BUDGET_WITH_ACCOMMODATION: { label: 'Alojamiento incluido', icon: Hotel },
 }
@@ -38,11 +40,17 @@ export function PlanRecommendationsSection() {
 }
 
 export function RecommendationCard({ recommendation, onOpen, isMyPlan = false }: { recommendation: PlanRecommendation; onOpen: () => void; isMyPlan?: boolean }) {
-  return <article className="recommendation-card"><header><span>{recommendation.plan.travelerCount === 1 ? <UserRound aria-hidden="true" /> : <UsersRound aria-hidden="true" />}{recommendation.plan.travelerCount} {recommendation.plan.travelerCount === 1 ? 'persona' : 'personas'}{isMyPlan && <em>Mi plan</em>}</span><h3>{recommendation.plan.name}</h3></header><div className="recommendation-highlights">{recommendation.highlights.map((highlight) => <RecommendationMetric key={highlight.criterion} highlight={highlight} priceType={recommendation.plan.priceType} />)}</div><button className="detail-button" type="button" onClick={onOpen}>Ver detalles <ArrowRight aria-hidden="true" /></button></article>
+  return <article className="recommendation-card"><header><span>{recommendation.plan.travelerCount === 1 ? <UserRound aria-hidden="true" /> : <UsersRound aria-hidden="true" />}{recommendation.plan.travelerCount} {recommendation.plan.travelerCount === 1 ? 'persona' : 'personas'}{isMyPlan && <em>Mi plan</em>}</span><h3>{recommendation.plan.name}</h3></header><div className="recommendation-highlights">{recommendation.highlights.map((highlight) => <RecommendationMetric key={highlight.criterion} highlight={highlight} priceType={recommendation.plan.priceType} />)}</div><button className="detail-button" type="button" onClick={onOpen}>Ver plan <ArrowRight aria-hidden="true" /></button></article>
 }
 
 function RecommendationMetric({ highlight, priceType }: { highlight: RecommendationHighlight; priceType: PlanRecommendation['plan']['priceType'] }) {
   const { label, icon: Icon } = criterionContent[highlight.criterion]
   const isTomorrowlandPrice = highlight.criterion === 'LOWEST_TOMORROWLAND_PRICE'
-  return <section><p><Icon aria-hidden="true" />{label}</p><strong>{isTomorrowlandPrice ? formatMoney(highlight.metric) : `≈ ${formatMoney(highlight.metric)}`} <small>por persona</small></strong><span>{highlight.explanation}</span><PriceBadge type={isTomorrowlandPrice ? priceType : 'ESTIMATED'} /></section>
+  return <section><p><Icon aria-hidden="true" />{label}</p>{isTomorrowlandPrice ? <RecommendationOfficialPrice money={highlight.metric} /> : <strong>≈ {formatMoney(highlight.metric)} <small>por persona</small></strong>}<span>{highlight.explanation}</span><PriceBadge type={isTomorrowlandPrice ? priceType : 'ESTIMATED'} /></section>
+}
+
+function RecommendationOfficialPrice({ money }: { money: RecommendationHighlight['metric'] }) {
+  const { rate } = useExchangeRate(money.currency, 'CLP')
+  const clp = convertMoney(money, 'CLP', rate)
+  return <><strong>{clp ? `≈ ${formatMoney(clp)} CLP` : 'Equivalencia CLP no disponible'} <small>por persona</small></strong><span className="recommendation-brl">{formatMoney(money)} · precio oficial Tomorrowland</span></>
 }

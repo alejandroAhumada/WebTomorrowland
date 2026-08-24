@@ -21,10 +21,11 @@ const renderBudgetUi = (node: ReactNode, personalized = false, myPlanId: string 
 describe('representación del presupuesto', () => {
   it('la card muestra solo el resumen y mantiene Comparar independiente', () => {
     const markup = renderBudgetUi(<PlanCard plan={plan} selected={false} disabled={false} onToggle={() => undefined} onOpenDetails={() => undefined} />)
-    expect(markup).toContain('Presupuesto completo estimado')
-    expect(markup).toContain('Ver detalles')
+    expect(markup).toContain('Viaje estimado')
+    expect(markup).toContain('Ver plan')
     expect(markup).toContain('Comparar')
     expect(markup).not.toContain('Gastos personales</strong>')
+    expect(markup).not.toContain('Fuente oficial')
   })
 
   it('el detalle presenta desglose, total, inclusiones y cierre accesible', () => {
@@ -33,6 +34,18 @@ describe('representación del presupuesto', () => {
     expect(markup).toContain('Gastos personales')
     expect(markup).toContain('Total aproximado')
     expect(markup).toContain('aria-label="Cerrar detalle"')
+    expect(markup).toContain('Ver desglose del viaje')
+    expect(markup).toContain('Ver inclusiones y exclusiones')
+    expect(markup).toContain('Fuente y actualización')
+  })
+
+  it('presenta Full Madness 2P como cálculo humano y no como pack oficial', () => {
+    const derived = productionPlans.find((item) => item.id === 'full-madness-2p-2027')!
+    const markup = renderBudgetUi(<PlanCard plan={derived} selected={false} disabled={false} onToggle={() => undefined} onOpenDetails={() => undefined} />)
+    expect(markup).toContain('Cálculo para 2 personas')
+    expect(markup).toContain('2 entradas individuales')
+    expect(markup).toContain('no es un pack oficial 2P')
+    expect(markup).not.toContain('Escenario derivado')
   })
 
   it('el comparador presenta total y por persona', () => {

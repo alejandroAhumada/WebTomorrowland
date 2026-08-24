@@ -20,7 +20,8 @@ test('smoke de Home, catálogo y rutas principales', async ({ page }) => {
   await page.goto('/planes/1-persona'); await expect(page.locator('article.plan-card')).toHaveCount(2)
   await page.goto('/planes/2-personas'); await expect(page.locator('article.plan-card')).toHaveCount(5)
   const derived = card(page, '2 × Full Madness Pass')
-  await expect(derived).toContainText('Escenario derivado · no es un pack oficial 2P')
+  await expect(derived).toContainText('Cálculo para 2 personas')
+  await expect(derived).toContainText('2 entradas individuales · no es un pack oficial 2P')
   await expect(derived).toContainText('Precio estimado')
   await page.goto('/comparar'); await expect(page.getByRole('heading', { name: /Elige los planes/i })).toBeVisible()
 })
@@ -29,19 +30,19 @@ test('Easy Tent cambia Regular, Comfort y N°1 y recalcula presupuesto', async (
   await page.setViewportSize({ width: 390, height: 844 }); await openPlan(page, 'Easy Tent 2P')
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('button', { name: 'Regular' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(dialog.getByText('BRL 7.609', { exact: true }).last()).toBeVisible()
+  await expect(dialog.locator('.tier-price').getByText('R$ 7.609', { exact: true })).toBeVisible()
   await expectElementNoOverflow(dialog)
   const initialBudget = await budgetTotal(dialog)
   await dialog.getByRole('button', { name: 'Comfort' }).click()
-  await expect(dialog.getByText('BRL 12.359', { exact: true })).toBeVisible()
-  await expect(dialog.getByText('+ BRL 4.750 respecto de Regular')).toBeVisible()
+  await expect(dialog.locator('.tier-price').getByText('R$ 12.359', { exact: true })).toBeVisible()
+  await expect(dialog.locator('.tier-price').getByText(/\+ R\$ 4\.750 .* vs\. Regular/)).toBeVisible()
   expect(await budgetTotal(dialog)).not.toBe(initialBudget)
-  await expectElementNoOverflow(dialog); await expectElementAtHorizontalOrigin(dialog); await page.screenshot({ path: `${artifacts}/easy-tent-comfort-390.png` })
+  await expectNoOverflow(page); await expectElementNoOverflow(dialog); await expectElementAtHorizontalOrigin(dialog); await expectPageAtHorizontalOrigin(page); await page.screenshot({ path: `${artifacts}/easy-tent-comfort-390.png` })
   await dialog.getByRole('button', { name: 'N°1' }).click()
-  await expect(dialog.getByText('BRL 20.719', { exact: true })).toBeVisible()
-  await expect(dialog.getByText(/Acceso a todas las áreas Comfort/)).toBeVisible()
+  await expect(dialog.locator('.tier-price').getByText('R$ 20.719', { exact: true })).toBeVisible()
+  await expect(dialog.locator('.tier-key-benefits').getByText(/Acceso a todas las áreas Comfort/).first()).toBeVisible()
   await expect(dialog.getByRole('link', { name: /Ver en Tomorrowland/ })).toBeVisible()
-  await expectElementNoOverflow(dialog); await expectElementAtHorizontalOrigin(dialog); await page.screenshot({ path: `${artifacts}/easy-tent-number-one-390.png` })
+  await expectNoOverflow(page); await expectElementNoOverflow(dialog); await expectElementAtHorizontalOrigin(dialog); await expectPageAtHorizontalOrigin(page); await page.screenshot({ path: `${artifacts}/easy-tent-number-one-390.png` })
   await dialog.getByRole('button', { name: 'Regular' }).click()
   await expectElementNoOverflow(dialog); await page.screenshot({ path: `${artifacts}/easy-tent-regular-390.png` })
   await dialog.getByRole('button', { name: 'Cerrar detalle' }).click(); await expect(dialog).toBeHidden()
@@ -82,8 +83,11 @@ test('comparador funciona en mobile y desktop', async ({ page }) => {
   await card(page, '2 × Full Madness Pass').getByRole('button', { name: 'Comparar' }).click(); await card(page, 'Easy Tent 2P').getByRole('button', { name: 'Comparar' }).click()
   await page.locator('.comparison-bar').getByRole('link', { name: /Comparar/ }).click()
   await expect(page.getByText('2 × Full Madness Pass', { exact: true }).first()).toBeVisible(); await expect(page.getByText('Easy Tent 2P', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Solo diferencias' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Viaje estimado por persona' })).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 }); await expectNoOverflow(page); await page.screenshot({ path: `${artifacts}/compare-390.png`, fullPage: true })
   await page.setViewportSize({ width: 1440, height: 900 }); await expectNoOverflow(page); await page.screenshot({ path: `${artifacts}/compare-1440.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Ver todo' }).click(); await expect(page.getByRole('heading', { name: 'Incluye', exact: true })).toBeVisible()
 })
 
 test('seis viewports no presentan overflow y generan capturas', async ({ page }) => {
@@ -94,6 +98,7 @@ test('seis viewports no presentan overflow y generan capturas', async ({ page })
     if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: `${artifacts}/home-${viewport.name}.png`, fullPage: true })
   }
   await page.goto('/planes/2-personas'); await expect(page.locator('article.plan-card').first()).toBeVisible()
+  await expect(page.locator('.decision-clp').nth(1)).toContainText(/≈ \$/)
   for (const viewport of viewports) {
     await page.setViewportSize(viewport); await expectNoOverflow(page)
     if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: `${artifacts}/plans-2p-${viewport.name}.png`, fullPage: true })
@@ -101,19 +106,20 @@ test('seis viewports no presentan overflow y generan capturas', async ({ page })
 })
 
 test('dialog soporta Escape, foco y controles accesibles', async ({ page }) => {
-  await page.goto('/planes/2-personas'); const trigger = card(page, 'Easy Tent 2P').getByRole('button', { name: 'Ver detalles' })
+  await page.goto('/planes/2-personas'); const trigger = card(page, 'Easy Tent 2P').getByRole('button', { name: 'Ver plan' })
   await trigger.focus(); await trigger.press('Enter'); const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('button', { name: 'Regular' })).toHaveAttribute('aria-pressed', 'true')
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden(); await expect(trigger).toBeFocused()
 })
 
 function card(page: Page, name: string) { return page.locator('article.plan-card').filter({ has: page.getByRole('heading', { name, exact: true }) }) }
-async function openPlan(page: Page, name: string) { await page.goto('/planes/2-personas'); await card(page, name).getByRole('button', { name: 'Ver detalles' }).click(); await expect(page.getByRole('dialog')).toBeVisible() }
+async function openPlan(page: Page, name: string) { await page.goto('/planes/2-personas'); await card(page, name).getByRole('button', { name: 'Ver plan' }).click(); await expect(page.getByRole('dialog')).toBeVisible() }
 async function selectMyPlan(page: Page, name: string) { await openPlan(page, name); await page.getByRole('dialog').getByRole('button', { name: 'Elegir como mi plan' }).click(); await page.getByRole('dialog').getByRole('button', { name: 'Cerrar detalle' }).click(); await page.goto('/') }
-async function budgetTotal(scope: Locator) { return scope.locator('.budget-totals').first().getByText(/\$/).first().innerText() }
+async function budgetTotal(scope: Locator) { return scope.locator('.detail-trip-summary .budget-summary strong').innerText() }
 async function expectNoOverflow(page: Page) { const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth })); expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client + 1) }
 async function expectElementNoOverflow(locator: Locator) { const dimensions = await locator.evaluate((element) => ({ scroll: element.scrollWidth, client: element.clientWidth })); expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client + 1) }
 async function expectElementAtHorizontalOrigin(locator: Locator) { expect(await locator.evaluate((element) => element.scrollLeft)).toBe(0) }
+async function expectPageAtHorizontalOrigin(page: Page) { expect(await page.evaluate(() => window.scrollX)).toBe(0) }
 async function clearPersonalState(page: Page) { await page.evaluate(() => { for (const key of Object.keys(localStorage)) if (key.startsWith('webtomorrowland:')) localStorage.removeItem(key) }); await page.reload() }
 async function waitForHomeData(page: Page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
