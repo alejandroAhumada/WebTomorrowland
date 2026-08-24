@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlans } from '../data/demoPlans'
-import { clearMyTrip, myTripFromStorageChange, myTripStorageKey, parseMyTrip, persistMyTrip, readMyTrip, resolveSelectedPlan, selectMyTrip, serializeMyTrip } from './myTrip'
+import { clearMyTrip, legacyMyTripStorageKey, myTripFromStorageChange, myTripStorageKey, parseMyTrip, persistMyTrip, readMyTrip, resolveSelectedPlan, selectMyTrip, serializeMyTrip, setConsideredTier } from './myTrip'
 
 describe('estado local de Mi viaje', () => {
   it('parte sin selección, permite seleccionar, reemplazar y quitar', () => {
@@ -14,15 +14,24 @@ describe('estado local de Mi viaje', () => {
 
   it('persiste solo versión e ID, nunca un snapshot del plan', () => {
     const serialized = serializeMyTrip('easy-tent-2p-2027')
-    expect(JSON.parse(serialized)).toEqual({ version: 1, selectedPlanId: 'easy-tent-2p-2027' })
+    expect(JSON.parse(serialized)).toEqual({ version: 2, selectedPlanId: 'easy-tent-2p-2027', consideredTierByPlan: {} })
     expect(serialized).not.toContain('totalPrice')
   })
 
   it('ignora JSON corrupto, versión desconocida e IDs inválidos', () => {
     expect(parseMyTrip('{oops').selectedPlanId).toBeNull()
-    expect(parseMyTrip(JSON.stringify({ version: 2, selectedPlanId: 'valid-id' })).selectedPlanId).toBeNull()
-    expect(parseMyTrip(JSON.stringify({ version: 1, selectedPlanId: '../invalid' })).selectedPlanId).toBeNull()
-    expect(parseMyTrip(JSON.stringify({ version: 1, selectedPlanId: 'a'.repeat(101) })).selectedPlanId).toBeNull()
+    expect(parseMyTrip(JSON.stringify({ version: 3, selectedPlanId: 'valid-id' })).selectedPlanId).toBeNull()
+    expect(parseMyTrip(JSON.stringify({ version: 2, selectedPlanId: '../invalid' })).selectedPlanId).toBeNull()
+    expect(parseMyTrip(JSON.stringify({ version: 2, selectedPlanId: 'a'.repeat(101) })).selectedPlanId).toBeNull()
+  })
+
+  it('migra v1 sin perder el plan y persiste una modalidad mínima por plan', () => {
+    const storage = { getItem: (key: string) => key === legacyMyTripStorageKey ? JSON.stringify({ version: 1, selectedPlanId: 'easy-tent-2p-2027' }) : null }
+    const migrated = readMyTrip(storage)
+    const withTier = setConsideredTier(migrated, migrated.selectedPlanId!, 'comfort')
+    expect(migrated).toEqual({ selectedPlanId: 'easy-tent-2p-2027', consideredTierByPlan: {} })
+    expect(withTier.consideredTierByPlan).toEqual({ 'easy-tent-2p-2027': 'comfort' })
+    expect(JSON.parse(serializeMyTrip(withTier))).not.toHaveProperty('price')
   })
 
   it('sobrevive reload leyendo el mismo ID versionado', () => {
@@ -40,6 +49,7 @@ describe('estado local de Mi viaje', () => {
   it('sincroniza otras pestañas y solo escucha su key', () => {
     expect(myTripFromStorageChange(myTripStorageKey, serializeMyTrip('vida-nova-2p-2027'))?.selectedPlanId).toBe('vida-nova-2p-2027')
     expect(myTripFromStorageChange(myTripStorageKey, null)?.selectedPlanId).toBeNull()
+    expect(myTripFromStorageChange(legacyMyTripStorageKey, null)).toBeNull()
     expect(myTripFromStorageChange('otra:key', null)).toBeNull()
   })
 

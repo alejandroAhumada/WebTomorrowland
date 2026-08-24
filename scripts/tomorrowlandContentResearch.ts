@@ -37,6 +37,7 @@ export function researchOfficialContent(pages: Record<string, FetchedOfficialPag
     const festivalText = pageText(pages['festival-tickets'].html)
     requireAll(festivalText, ['Comfort Areas','Welcome Drink','13:00','15:00','N°1','MainStage','São Paulo','Itu','Home Delivery','October 24','Treasure Case','Festival Box Office'])
     requireAll(pageText(pages['how-to-order'].html), ['Subject to availability','one Treasure Case','every two Bracelets','delivery fees'])
+    requireAll(pageText(pages['global-journey-hotels'].html), ['Hotel Packages', 'optional add-on for Comfort or N°1 access'])
     const extracted: Record<string, Record<string,number>> = {}
     for (const [sourceId, tiers] of Object.entries(expectedPrices)) {
       const text = pageText(pages[sourceId].html); extracted[sourceId] = {}
@@ -45,7 +46,7 @@ export function researchOfficialContent(pages: Record<string, FetchedOfficialPag
         extracted[sourceId][tierId] = expected
       }
     }
-    const stableEvidence = { extractorVersion:2, extracted, comfort: evidenceWindow(festivalText,'Comfort Areas'), numberOne:evidenceWindow(festivalText,'N°1'), treasure:evidenceWindow(festivalText,'Home Delivery'), availability:evidenceWindow(pageText(pages['how-to-order'].html),'Subject to availability') }
+    const stableEvidence = { extractorVersion:3, extracted, comfort: evidenceWindow(festivalText,'Comfort Areas'), numberOne:evidenceWindow(festivalText,'N°1'), treasure:evidenceWindow(festivalText,'Home Delivery'), availability:evidenceWindow(pageText(pages['how-to-order'].html),'Subject to availability'), globalJourney:evidenceWindow(pageText(pages['global-journey-hotels'].html),'optional add-on') }
     const hash = digest(stableEvidence)
     if (hash === previousHash) return { hash, status:'NO_SOURCE_CHANGE', proposals:[], notes:['La evidencia relevante no cambió.'] }
     const observedAt = `${Object.values(pages).map((page) => page.fetchedAt.slice(0,10)).sort().at(-1)}T00:00:00.000Z`

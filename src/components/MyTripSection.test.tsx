@@ -38,7 +38,7 @@ describe('Mi viaje en la interfaz', () => {
     expect(markup).toContain('Ver mi plan')
     expect(markup).toContain('Ajustar presupuesto')
     expect(markup).toContain('Comparar')
-    expect(markup).toContain('no representa una reserva, compra ni entrada confirmada')
+    expect(markup).toContain('No representa una compra, reserva, disponibilidad garantizada ni entrada confirmada')
   })
 
   it('muestra progreso personal, checkbox accesible y estado completado', () => {

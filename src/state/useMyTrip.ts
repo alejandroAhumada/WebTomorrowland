@@ -2,7 +2,9 @@ import { createContext, useContext } from 'react'
 
 export interface MyTripContextValue {
   selectedPlanId: string | null
+  consideredTierByPlan: Record<string, string>
   selectPlan: (planId: string) => boolean
+  setConsideredTier: (planId: string, tierId: string) => boolean
   clearPlan: () => void
   isMyPlan: (planId: string) => boolean
 }

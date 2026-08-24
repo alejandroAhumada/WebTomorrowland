@@ -10,7 +10,7 @@ import { ClpConversion } from './ClpConversion'
 import { TravelBudgetSummary } from './TravelBudgetView'
 import { useMyTrip } from '../state/useMyTrip'
 import { useTicketTiers } from '../hooks/useTicketTiers'
-import { getTierOffering } from '../models/ticketTier'
+import { getPlanCatalogEntry, getPlanTierOptions } from '../models/planCatalog'
 
 interface PlanCardProps { plan: TravelPlan; selected: boolean; disabled: boolean; onToggle: () => void; onOpenDetails: () => void }
 
@@ -21,15 +21,17 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
   const TravelersIcon = plan.travelerCount === 1 ? UserRound : UsersRound
   const { isMyPlan } = useMyTrip()
   const { tiers } = useTicketTiers()
-  const availableTiers = tiers.filter((tier) => getTierOffering(tier, plan.id))
+  const availableTiers = getPlanTierOptions(plan, tiers)
+  const catalogEntry = getPlanCatalogEntry(plan.id)
 
   const preventCardAction = (event: MouseEvent) => event.stopPropagation()
   return <article className={`plan-card ${selected ? 'selected' : ''}`} onClick={onOpenDetails}>
     <div className="card-topline"><span className="plan-type-icon"><PlanIcon aria-hidden="true" /></span><span className="card-badges"><PriceBadge type={plan.priceType} />{isMyPlan(plan.id) && <span className="my-plan-badge"><BookmarkCheck aria-hidden="true" />Mi plan</span>}</span></div>
     <p className="category">{categoryLabels[plan.category]}</p>
     <h2>{plan.name}</h2>
+    {catalogEntry?.classification === 'DERIVED_SCENARIO' && <p className="catalog-kind">Escenario derivado · no es un pack oficial 2P</p>}
     <p className="traveler-label"><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}</p>
-    {availableTiers.length > 0 && <p className="tier-summary"><span>Modalidades disponibles</span><strong>{availableTiers.map((tier) => tier.name).join(' · ')}</strong></p>}
+    {availableTiers.length > 0 && <p className="tier-summary"><span>Modalidades disponibles</span><strong>{availableTiers.map(({ tier }) => tier.name).join(' · ')}</strong></p>}
     <div className="price-block">
       {plan.totalPrice && pricePerPerson ? <>
         <strong>{formatMoney(plan.totalPrice)}</strong><span>Precio total · {plan.totalPrice.currency}</span>
