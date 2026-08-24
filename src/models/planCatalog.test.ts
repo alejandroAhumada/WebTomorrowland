@@ -25,6 +25,7 @@ describe('catálogo oficial y modalidad considerada', () => {
 
   it('solo expone tiers aplicables y mantiene PENDING cuando no hay precio oficial', () => {
     expect(getPlanTierOptions(plan('easy-tent-2p-2027'), initialTicketTiers).map(({ tier }) => tier.id)).toEqual(['regular', 'comfort', 'number-one'])
+    expect(getPlanTierOptions(plan('easy-tent-2p-2027'), [...initialTicketTiers].reverse()).map(({ tier }) => tier.id)).toEqual(['regular', 'comfort', 'number-one'])
     expect(resolvePlanTierOption(plan('global-journey-hotel-1p-2027'), initialTicketTiers, 'comfort')).toMatchObject({ priceNature: 'PENDING', totalPrice: null })
     expect(getPlanTierOptions({ ...plan('easy-tent-2p-2027'), id: 'unknown-plan' }, initialTicketTiers)).toEqual([])
   })

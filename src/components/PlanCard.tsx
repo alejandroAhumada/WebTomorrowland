@@ -41,14 +41,16 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
     </div>
     <TravelBudgetSummary budget={budget} loading={budgetLoading} />
     <dl className="plan-details"><div><dt><Hotel aria-hidden="true" />Alojamiento</dt><dd>{plan.accommodation}</dd></div><div><dt><Bus aria-hidden="true" />Transporte</dt><dd>{plan.transport}</dd></div></dl>
-    <FeatureList title="Incluye" items={plan.inclusions} included />
-    {plan.notIncluded.length > 0 && <FeatureList title="No incluido" items={plan.notIncluded} />}
+    <FeatureList title="Incluye" items={plan.inclusions} included limit={4} />
+    {plan.notIncluded.length > 0 && <FeatureList title="No incluido" items={plan.notIncluded} limit={2} />}
     <div className="card-meta"><AvailabilityBadge status={plan.status} />{plan.sources.length > 0 && <p className="source"><span>Verificado {formatDate(plan.sources[0].verifiedAt)}</span>{plan.sources.map((source) => source.url ? <a key={`${source.label}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" onClick={preventCardAction} aria-label={`${source.label}, abre en una nueva pestaña`}>{source.type === 'OFFICIAL' ? 'Fuente oficial' : source.label}<ArrowUpRight aria-hidden="true" /></a> : null)}</p>}</div>
     <div className="card-actions"><button className="button secondary detail-button" type="button" onClick={(event) => { preventCardAction(event); onOpenDetails() }}><Eye aria-hidden="true" />Ver detalles</button><button className={`button compare-button ${selected ? 'selected-button' : ''}`} type="button" onClick={(event) => { preventCardAction(event); onToggle() }} disabled={disabled && !selected} aria-pressed={selected}>{selected ? <><Check aria-hidden="true" />Seleccionado</> : 'Comparar'}</button></div>
   </article>
 }
 
-function FeatureList({ title, items, included = false }: { title: string; items: string[]; included?: boolean }) {
+function FeatureList({ title, items, included = false, limit }: { title: string; items: string[]; included?: boolean; limit?: number }) {
   const Icon = included ? CircleCheck : CircleX
-  return <section className={`feature-list ${included ? 'included' : 'excluded'}`}><h3>{title}</h3><ul>{items.map((item) => <li key={item}><Icon aria-hidden="true" />{item}</li>)}</ul></section>
+  const visibleItems = limit ? items.slice(0, limit) : items
+  const remaining = items.length - visibleItems.length
+  return <section className={`feature-list ${included ? 'included' : 'excluded'}`}><h3>{title}</h3><ul>{visibleItems.map((item) => <li key={item}><Icon aria-hidden="true" />{item}</li>)}</ul>{remaining > 0 && <p className="feature-more">+ {remaining} {remaining === 1 ? 'elemento' : 'elementos'} en el detalle</p>}</section>
 }

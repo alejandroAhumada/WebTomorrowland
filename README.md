@@ -45,7 +45,10 @@ npm run lint
 npm test
 npm run typecheck
 npm run build
+npm run test:e2e
 ```
+
+`npm run test:e2e` levanta Vite y ejecuta la auditoría interactiva con Playwright sobre Google Chrome: navegación, modalidades, Mi Viaje, presupuesto, preparación, comparador, accesibilidad básica y overflow en seis viewports. Las capturas locales se escriben en `e2e-artifacts/`; reportes, traces y screenshots temporales permanecen ignorados por Git. `npm run test:e2e:ui` abre el modo interactivo de Playwright. El mismo smoke browser forma parte del workflow de Hosting.
 
 `npm run test:watch` mantiene Vitest activo durante el desarrollo y `npm run preview` sirve localmente el contenido ya generado en `dist/`.
 

@@ -17,6 +17,7 @@ import { getPlanCatalogEntry, getPlanTierOptions, planForTierBudget, tierDeltaFr
 
 export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { plan: TravelPlan; onClose: () => void; openBudgetEditor?: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null)
   const { consideredTierByPlan, setConsideredTier, isMyPlan, selectPlan, clearPlan } = useMyTrip()
   const perPerson = getPricePerPerson(plan)
   const TravelersIcon = plan.travelerCount === 1 ? UserRound : UsersRound
@@ -34,9 +35,9 @@ export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { 
 
   useEffect(() => {
     const dialog = dialogRef.current
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousFocus = previousFocusRef.current
     if (dialog && !dialog.open) dialog.showModal()
-    return () => { previousFocus?.focus() }
+    return () => { window.requestAnimationFrame(() => previousFocus?.focus()) }
   }, [])
 
   return <dialog ref={dialogRef} className="plan-detail-dialog" onCancel={(event) => { event.preventDefault(); onClose() }} onClose={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose() }} aria-labelledby="plan-detail-title">

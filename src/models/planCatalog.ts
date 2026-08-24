@@ -22,6 +22,8 @@ export interface PlanTierOption {
   unitPrice: Money | null
 }
 
+const tierOrder: Readonly<Record<TicketTier['type'], number>> = { REGULAR: 0, COMFORT: 1, NUMBER_ONE: 2 }
+
 const festivalTickets = 'https://brasil.tomorrowland.com/en/tickets/festival-tickets/'
 const catalog: Readonly<Record<string, CatalogEntry>> = {
   'full-madness-1p-2027': { classification: 'OFFICIAL_PRODUCT', officialProductName: 'Full Madness Pass', sourceUrl: festivalTickets },
@@ -56,7 +58,7 @@ export function getPlanTierOptions(plan: TravelPlan, tiers: readonly TicketTier[
       sourceUrl: base.sourceUrl, multiplier: entry.multiplier,
     })
   }
-  return options
+  return options.sort((left, right) => tierOrder[left.tier.type] - tierOrder[right.tier.type] || left.tier.name.localeCompare(right.tier.name, 'es'))
 }
 
 export function resolvePlanTierOption(plan: TravelPlan, tiers: readonly TicketTier[], tierId: string | null): PlanTierOption | null {
