@@ -79,6 +79,7 @@ export interface ResearchState {
   sources: Record<string, { hash: string; observedAt: string; lastProposalResults?: PlanSyncResponse['result'][] }>
   eventSources?: Record<string, { hash: string; observedAt: string; lastProposalResults?: string[] }>
   contentSources?: Record<string, { hash: string; observedAt: string; lastProposalResults?: string[] }>
+  discoverySources?: Record<string, { hash: string; observedAt: string; lastProposalResults?: string[] }>
 }
 export interface FetchedOfficialPage { url: string; html: string; fetchedAt: string; lastModified?: string }
 export interface FetchOptions { timeoutMs?: number; maxBytes?: number; maxRedirects?: number }

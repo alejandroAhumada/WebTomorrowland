@@ -17,5 +17,9 @@ service cloud.firestore {
     match /planSyncProposals/{proposalId} { allow read, write: if false; }
     match /planSyncState/{planId} { allow read, write: if false; }
     match /syncRuns/{runId} { allow read, write: if false; }
+    match /detectedProductCandidates/{candidateId} { allow read, write: if false; }
+    match /detectedProductCandidates/{candidateId}/observations/{observationId} { allow read, write: if false; }
+    match /productDiscoveryProposals/{proposalId} { allow read, write: if false; }
+    match /productDiscoveryState/{sourceId} { allow read, write: if false; }
   }
 }

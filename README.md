@@ -188,7 +188,22 @@ fuente oficial -> evidencia -> propuesta -> Sync API dry-run
                                       NO_CHANGE/REJECTED/error -> no escribir
 ```
 
-La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. `Research scope` permite elegir `all`, `plans`, `events` o `information`. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas aceptadas. El cron usa `all` y el flujo completo. Los logs muestran fuente, hash abreviado, entidad, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+La ejecución manual está en **Actions → Research Tomorrowland official sources → Run workflow**. `Research scope` permite elegir `all`, `plans`, `events`, `information` o `discovery`. Mantén `Apply changes` desactivado para investigación segura; activarlo no omite el dry-run, solo permite reenviar propuestas aceptadas. El cron usa `all` y el flujo completo. Los logs muestran fuente, hash abreviado, entidad, `proposalId` y resultados, pero nunca tokens, headers, HTML ni credenciales.
+
+### Discovery observacional de productos
+
+El scope `discovery` inspecciona cards y enlaces de producto en índices oficiales acotados. Una URL canónica ya vinculada estructuralmente a un plan conocido se descarta; cualquier otra entrada explícita se registra como candidato privado, sin categoría, ocupación, precio, tier ni inclusiones inferidas. El ID depende de la URL oficial canónica, por lo que parámetros de tracking, fragmentos y cambios descriptivos no duplican candidatos.
+
+`syncTomorrowlandDiscovery` solo puede escribir `detectedProductCandidates`, sus observaciones, `productDiscoveryState`, `productDiscoveryProposals` y la auditoría administrativa de `syncRuns`. Esas colecciones no tienen lectura ni escritura pública. La API no importa repositorios de planes ni expone CREATE/UPDATE sobre `plans`. Tres observaciones exitosas y consecutivas sin el candidato pueden marcarlo `NO_LONGER_OBSERVED`; errores HTTP o de parsing no generan propuesta ni alteran estado.
+
+La aprobación es deliberadamente humana y no publica nada:
+
+```text
+DETECTED -> evidencia oficial -> revisión humana -> APPROVED_FOR_MODELING
+         -> análisis consciente del dominio -> cambio administrativo + tests -> publicación
+```
+
+`APPROVED_FOR_MODELING` solo expresa decisión editorial. No crea un `TravelPlan` y el discovery nunca alimenta el frontend público.
 
 ### Ticket tiers e información oficial
 
@@ -228,7 +243,8 @@ functions/
 └── src/         Sync API, reglas de propuestas y adaptador administrativo Firestore
 scripts/
 ├── tomorrowlandResearch.ts       Fetch compartido e investigación de planes
-└── tomorrowlandEventResearch.ts  Eventos, evidencia y cliente Event Sync API
+├── tomorrowlandEventResearch.ts  Eventos, evidencia y cliente Event Sync API
+└── tomorrowlandProductDiscovery.ts  Discovery observacional sin publicación
 ```
 
 `firebase.json` configura Firebase Hosting como SPA y `firestore.rules` mantiene el acceso público en modo lectura. Los datos demo están en `src/data/demoPlans.ts`.
