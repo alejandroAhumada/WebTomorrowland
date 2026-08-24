@@ -48,6 +48,7 @@ describe('investigación determinista de acontecimientos', () => {
     const events = detectTreasureCaseDeadline('Tomorrowland Brasil 2027. By selecting Home Delivery until October 24, 2026 you will receive a Treasure Case.', source.url)
     expect(events[0]).toMatchObject({ eventId:'treasure-case-home-delivery-deadline-2027', startsAt:'2026-10-24', type:'DEADLINE' })
     expect(events[0].startsAt).not.toContain('T')
+    expect(detectTreasureCaseDeadline('Tomorrowland Brasil 2027. By selecting Home Delivery until October 24, 2027 you will receive a Treasure Case.', source.url)).toEqual([])
   })
 
   it('normaliza fecha BRT sin depender del timezone', () => {

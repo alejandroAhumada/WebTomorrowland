@@ -197,12 +197,13 @@ export function detectFestivalEvent(text: string, sourceUrl: string): DetectedIm
 }
 
 export function detectTreasureCaseDeadline(text: string, sourceUrl: string): DetectedImportantEvent[] {
-  const match = text.match(/(?:selecting|select)\s+Home Delivery\s+until\s+(October\s+24)(?:,\s*2026)?[^.]{0,180}Treasure Case/i)
+  const match = text.match(/(?:selecting|select)\s+Home Delivery\s+until\s+(October\s+24)(?:,\s*(\d{4}))?[^.]{0,180}Treasure Case/i)
   if (!match) return []
+  if (match[2] && match[2] !== '2026') return []
   const excerpt = evidenceExcerpt(match[0])
   return [{
     eventId: 'treasure-case-home-delivery-deadline-2027', title: 'Último día para Home Delivery con Treasure Case',
-    startsAt: parseOfficialDate(`${match[1]}, 2026`), type: 'DEADLINE', sourceUrl, excerpt,
+    startsAt: parseOfficialDate(`${match[1]}, ${match[2] ?? '2026'}`), type: 'DEADLINE', sourceUrl, excerpt,
     sourceHash: evidenceHash(excerpt), operation: knownEvents.has('treasure-case-home-delivery-deadline-2027') ? 'UPDATE' : 'CREATE',
     evidenceKind: 'CONFIRMATION', appliesTo: { scope: 'ALL' },
   }]
