@@ -42,7 +42,7 @@ export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { 
   return <dialog ref={dialogRef} className="plan-detail-dialog" onCancel={(event) => { event.preventDefault(); onClose() }} onClose={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose() }} aria-labelledby="plan-detail-title">
     <div className="plan-detail-panel">
       <button className="detail-close" type="button" onClick={onClose} aria-label="Cerrar detalle"><X aria-hidden="true" /></button>
-      <header className="detail-heading"><p className="eyebrow">Plan para explorar</p><h2 id="plan-detail-title">{plan.name}</h2><p><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'} · {catalogEntry?.classification === 'DERIVED_SCENARIO' ? 'cálculo de entradas individuales' : catalogEntry?.classification === 'PENDING_OFFICIAL_INFORMATION' ? 'información oficial pendiente' : 'producto oficial'}</p></header>
+      <header className="detail-heading"><p className="eyebrow">Plan para explorar</p><h2 id="plan-detail-title">{plan.name}</h2><p><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'} · {catalogEntry?.classification === 'DERIVED_SCENARIO' ? 'cálculo de entradas individuales' : catalogEntry?.classification === 'PENDING_OFFICIAL_INFORMATION' ? 'información oficial pendiente' : catalogEntry?.classification === 'OFFICIAL_PRODUCT' ? 'producto oficial' : 'información parcial sin clasificar'}</p></header>
       {catalogEntry?.classification === 'DERIVED_SCENARIO' && <p className="catalog-disclosure"><strong>Cálculo para 2 personas.</strong> Son dos entradas individuales; no es un pack oficial 2P.</p>}
       {catalogEntry?.classification === 'PENDING_OFFICIAL_INFORMATION' && <p className="catalog-disclosure"><strong>Precio aún no publicado.</strong> {catalogEntry.explanation}</p>}
       {planTiers.length > 0 ? <TierExplorer entries={planTiers} selectedId={selectedTier?.tier.id ?? ''} onSelect={(id) => { setLocalTierId(id); if (selectedAsMyPlan) setConsideredTier(plan.id, id) }} /> : <StandalonePrice plan={plan} />}
@@ -57,7 +57,7 @@ export function PlanDetailDialog({ plan, onClose, openBudgetEditor = false }: { 
 }
 
 function StandalonePrice({ plan }: { plan: TravelPlan }) {
-  return <section className="detail-price"><div><span>Precio Tomorrowland</span>{plan.totalPrice ? <><ClpAmount money={plan.totalPrice} /><strong className="official-brl">{formatMoney(plan.totalPrice)}</strong><small>Precio oficial Tomorrowland</small></> : <><strong>Precio aún no publicado</strong><small>Tomorrowland todavía no informa el precio.</small></>}</div><PriceBadge type={plan.priceType} /></section>
+  return <section className="detail-price"><div><span>Precio Tomorrowland</span>{plan.totalPrice ? <><ClpAmount money={plan.totalPrice} /><strong className="official-brl">{formatMoney(plan.totalPrice)}</strong><small>{plan.priceType === 'OFFICIAL' ? 'Precio oficial Tomorrowland' : 'Precio estimado'}</small></> : <><strong>Precio aún no publicado</strong><small>Tomorrowland todavía no informa el precio.</small></>}</div><PriceBadge type={plan.priceType} /></section>
 }
 
 function TierExplorer({ entries, selectedId, onSelect }: { entries: PlanTierOption[]; selectedId: string; onSelect: (id: string) => void }) {

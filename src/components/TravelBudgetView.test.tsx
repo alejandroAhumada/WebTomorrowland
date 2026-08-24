@@ -13,6 +13,8 @@ import { BudgetPreferencesProvider } from '../state/BudgetPreferencesContext'
 import { defaultBudgetPreferences } from '../data/travelBudgetEstimates'
 import { MyTripProvider } from '../state/MyTripContext'
 import { TripPreparationProvider } from '../state/TripPreparationContext'
+import { parseTravelPlan } from '../models/plan'
+import { futurePlanFixtures } from '../testFixtures/futurePlans'
 
 const plan = demoPlans.find((item) => item.travelerCount === 1)!
 const budget = createTravelBudget(plan, initialTravelBudgetEstimates)
@@ -89,5 +91,11 @@ describe('representación del presupuesto', () => {
     const markup = renderToStaticMarkup(<TravelBudgetBreakdown budget={budget} />)
     expect(markup).toContain('estimación independiente')
     expect(markup).not.toContain('Total oficial')
+  })
+
+  it('el comparador no convierte alojamiento desconocido en una exclusión', () => {
+    const futurePlan = parseTravelPlan('fixture-future-product-2027', futurePlanFixtures.NEW_PRODUCT_UNKNOWN_ACCOMMODATION)
+    expect(renderBudgetUi(<BudgetCompareValue plan={futurePlan} category="EXTERNAL_ACCOMMODATION" />)).toContain('No informado')
+    expect(renderBudgetUi(<BudgetCompareValue plan={futurePlan} field="perPerson" />)).toContain('Pendiente')
   })
 })

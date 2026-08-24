@@ -41,7 +41,7 @@ export function buildPersonalTripTasks(plan: TravelPlan): PersonalTripTaskDefini
 
 export function taskApplies(task: PersonalTripTaskDefinition, plan: TravelPlan): boolean {
   if (task.applicability === 'ALL') return true
-  if (task.applicability === 'REQUIRES_EXTERNAL_ACCOMMODATION') return !planIncludesAccommodation(plan)
+  if (task.applicability === 'REQUIRES_EXTERNAL_ACCOMMODATION') return planIncludesAccommodation(plan) === false
   if (task.applicability === 'FLIGHT_REQUIRED') return true
   return false
 }

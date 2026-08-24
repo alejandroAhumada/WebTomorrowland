@@ -41,11 +41,21 @@ const catalog: Readonly<Record<string, CatalogEntry>> = {
 
 export function getPlanCatalogEntry(planId: string): CatalogEntry | null { return catalog[planId] ?? null }
 
+export function getPlanAccommodationInclusion(plan: TravelPlan): boolean | null {
+  if (typeof plan.accommodationIncluded === 'boolean') return plan.accommodationIncluded
+  const entry = getPlanCatalogEntry(plan.id)
+  if (!entry) return null
+  if (entry.classification === 'DERIVED_SCENARIO' || entry.officialProductName === 'Full Madness Pass') return false
+  if (plan.dreamVilleIncluded === true || plan.category === 'GLOBAL_JOURNEY') return true
+  return null
+}
+
 export function getPlanClassificationLabel(plan: TravelPlan): string {
   const classification = getPlanCatalogEntry(plan.id)?.classification
   if (classification === 'DERIVED_SCENARIO') return `Cálculo para ${plan.travelerCount} ${plan.travelerCount === 1 ? 'persona' : 'personas'}`
   if (plan.category === 'GLOBAL_JOURNEY') return 'Global Journey'
-  if (plan.dreamVilleIncluded) return 'DreamVille · Entrada + alojamiento'
+  if (plan.dreamVilleIncluded === true && getPlanAccommodationInclusion(plan) === true) return 'DreamVille · Entrada + alojamiento'
+  if (plan.dreamVilleIncluded === true) return 'DreamVille'
   if (classification === 'OFFICIAL_PRODUCT') return 'Entrada al festival'
   return 'Alternativa para planificar'
 }

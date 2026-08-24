@@ -53,7 +53,7 @@ export function lowestTomorrowlandPrice(plans: readonly TravelPlan[]) {
 }
 
 export function lowestBudgetWithAccommodation(plans: readonly TravelPlan[], budgets: ReadonlyMap<string, TravelBudget>) {
-  const candidates = plans.filter(planIncludesAccommodation).flatMap((plan) => {
+  const candidates = plans.filter((plan) => planIncludesAccommodation(plan) === true).flatMap((plan) => {
     const metric = budgets.get(plan.id)?.totalPerPerson
     return metric ? [{ plan, metric }] : []
   }).sort(compareBudgetCandidates)

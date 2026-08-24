@@ -200,4 +200,20 @@ describe('barrera de dominio y persistencia', () => {
     expect(store.audits.get(input.proposalId)).toMatchObject({ result: 'REJECTED', error: 'El plan no existe.' })
     expect(store.audits.get(input.proposalId)?.error).not.toMatch(/[\r\n]/)
   })
+
+  it('no actualiza automáticamente un producto cuya categoría aún no fue aprobada', async () => {
+    const base = store.plans.get('easy-tent-2p-2027')!
+    const futurePlan: TravelPlan = {
+      ...structuredClone(base), id: 'fixture-future-product-2027', name: '[FIXTURE] Producto futuro no real',
+      category: 'UNKNOWN', sourceCategory: 'FUTURE_OFFICIAL_PACKAGE', accommodationIncluded: null, dreamVilleIncluded: null,
+    }
+    store.plans.set(futurePlan.id, futurePlan)
+    const input = proposal({ status: 'AVAILABLE' }, { planId: futurePlan.id, proposalId: 'proposal-future-fixture' })
+
+    const result = await processPlanSyncProposal(store, input, { dryRun: false, now })
+
+    expect(result).toMatchObject({ result: 'REJECTED', rejectionCode: 'UNSUPPORTED_PLAN' })
+    expect(store.plans.get(futurePlan.id)).toEqual(futurePlan)
+    expect(store.histories.size).toBe(0)
+  })
 })

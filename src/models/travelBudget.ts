@@ -1,6 +1,7 @@
 import type { ExchangeRate } from './exchangeRate'
 import { convertMoney } from './exchangeRate'
 import type { Money, PriceType, TravelPlan } from './plan'
+import { getPlanAccommodationInclusion } from './planCatalog'
 
 export type BudgetCategory = 'TOMORROWLAND' | 'FLIGHT' | 'EXTERNAL_ACCOMMODATION' | 'LOCAL_TRANSPORT' | 'FOOD' | 'PERSONAL_EXPENSES'
 export type BudgetScope = 'PER_GROUP' | 'PER_PERSON'
@@ -40,13 +41,13 @@ export interface TravelBudget {
   totalPerPerson: Money | null
   complete: boolean
   pendingReason: 'PLAN_PRICE' | 'CONVERSION' | 'COMPONENT' | null
-  accommodationIncluded: boolean
+  accommodationIncluded: boolean | null
 }
 
 export const budgetCategoryOrder: BudgetCategory[] = ['TOMORROWLAND', 'FLIGHT', 'EXTERNAL_ACCOMMODATION', 'LOCAL_TRANSPORT', 'FOOD', 'PERSONAL_EXPENSES']
 
-export function planIncludesAccommodation(plan: TravelPlan): boolean {
-  return plan.category === 'GLOBAL_JOURNEY' || plan.dreamVilleIncluded
+export function planIncludesAccommodation(plan: TravelPlan): boolean | null {
+  return getPlanAccommodationInclusion(plan)
 }
 
 export function createTravelBudget(plan: TravelPlan, estimates: readonly BudgetEstimate[], exchangeRate?: ExchangeRate | null): TravelBudget {
@@ -59,12 +60,12 @@ export function createTravelBudget(plan: TravelPlan, estimates: readonly BudgetE
       ...(plan.priceType ? { originalPriceType: plan.priceType } : {}),
     }
   const accommodationIncluded = planIncludesAccommodation(plan)
-  const applicableEstimates = estimates.filter((estimate) => estimate.category !== 'EXTERNAL_ACCOMMODATION' || !accommodationIncluded)
+  const applicableEstimates = estimates.filter((estimate) => estimate.category !== 'EXTERNAL_ACCOMMODATION' || accommodationIncluded !== true)
   const estimateItems: BudgetItem[] = applicableEstimates.map((estimate) => ({
-      category: estimate.category, money: estimate.money ? { ...estimate.money } : null,
+      category: estimate.category, money: estimate.category === 'EXTERNAL_ACCOMMODATION' && accommodationIncluded === null ? null : estimate.money ? { ...estimate.money } : null,
       scope: estimate.scope, unit: estimate.unit, quantity: estimate.quantity, travelerCount: plan.travelerCount,
-      valueType: estimate.money ? 'ESTIMATED' as const : 'PENDING' as const,
-      description: estimate.description, updatedAt: estimate.updatedAt,
+      valueType: estimate.category === 'EXTERNAL_ACCOMMODATION' && accommodationIncluded === null ? 'PENDING' as const : estimate.money ? 'ESTIMATED' as const : 'PENDING' as const,
+      description: estimate.category === 'EXTERNAL_ACCOMMODATION' && accommodationIncluded === null ? 'No se sabe todavía si esta alternativa requiere alojamiento externo.' : estimate.description, updatedAt: estimate.updatedAt,
     }))
   const items = [tomorrowlandItem, ...estimateItems]
     .sort((left, right) => budgetCategoryOrder.indexOf(left.category) - budgetCategoryOrder.indexOf(right.category))

@@ -1,5 +1,5 @@
 import type { Firestore, Transaction } from 'firebase-admin/firestore'
-import { assertValidPlan, type TravelPlan } from '../../src/models/plan.js'
+import { parseTravelPlan, type TravelPlan } from '../../src/models/plan.js'
 import type { PlanSyncAudit, PlanHistory, PlanSyncState, PlanSyncStore, PlanSyncTransaction, StoredProposal } from './planSync.js'
 
 export class FirestorePlanSyncStore implements PlanSyncStore {
@@ -16,7 +16,7 @@ class FirestoreTransaction implements PlanSyncTransaction {
   async getPlan(id: string): Promise<TravelPlan | null> {
     const snapshot = await this.transaction.get(this.database.collection('plans').doc(id))
     if (!snapshot.exists) return null
-    return assertValidPlan({ ...(snapshot.data() as Omit<TravelPlan, 'id'>), id })
+    return parseTravelPlan(id, snapshot.data())
   }
 
   async getProcessedProposal(id: string): Promise<StoredProposal | null> {

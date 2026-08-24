@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react'
 import { useTravelBudget } from '../hooks/useTravelBudget'
 import { useTicketTiers } from '../hooks/useTicketTiers'
 import type { TravelPlan } from '../models/plan'
-import { getPlanCatalogEntry, getPlanClassificationLabel, getPlanTierOptions } from '../models/planCatalog'
+import { getPlanAccommodationInclusion, getPlanCatalogEntry, getPlanClassificationLabel, getPlanTierOptions } from '../models/planCatalog'
 import { budgetItemTotalMoney } from '../models/travelBudget'
 import { useMyTrip } from '../state/useMyTrip'
 import { formatMoney } from '../utils/format'
@@ -14,7 +14,7 @@ interface PlanCardProps { plan: TravelPlan; selected: boolean; disabled: boolean
 
 export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: PlanCardProps) {
   const { budget, loading: budgetLoading } = useTravelBudget(plan)
-  const PlanIcon = plan.category === 'GLOBAL_JOURNEY' ? Plane : plan.dreamVilleIncluded ? TentTree : Ticket
+  const PlanIcon = plan.category === 'GLOBAL_JOURNEY' ? Plane : plan.dreamVilleIncluded === true ? TentTree : Ticket
   const TravelersIcon = plan.travelerCount === 1 ? UserRound : UsersRound
   const { isMyPlan } = useMyTrip()
   const { tiers } = useTicketTiers()
@@ -22,7 +22,8 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
   const catalogEntry = getPlanCatalogEntry(plan.id)
   const tomorrowlandItem = budget.items.find((item) => item.category === 'TOMORROWLAND')
   const clpPrice = tomorrowlandItem ? budgetItemTotalMoney(tomorrowlandItem) : null
-  const accommodationLabel = budget.accommodationIncluded ? 'Alojamiento incluido' : 'Alojamiento por separado'
+  const accommodationInclusion = getPlanAccommodationInclusion(plan)
+  const accommodationLabel = accommodationInclusion === true ? 'Alojamiento incluido' : accommodationInclusion === false ? 'Alojamiento por separado' : 'Alojamiento no informado'
   const preventCardAction = (event: MouseEvent) => event.stopPropagation()
 
   return <article className={`plan-card decision-card ${selected ? 'selected' : ''}`} onClick={onOpenDetails}>

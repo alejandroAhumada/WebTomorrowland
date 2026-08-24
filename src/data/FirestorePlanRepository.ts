@@ -1,8 +1,8 @@
 import { collection, documentId, getDocs, query, where } from 'firebase/firestore'
-import { assertValidPlan, type TravelPlan } from '../models/plan'
+import { parseTravelPlan, type TravelPlan } from '../models/plan'
 import type { PlanRepository } from './PlanRepository'
 import { getFirebaseDb } from './firebase'
-function parsePlan(id: string, data: unknown): TravelPlan { return assertValidPlan({ ...(data as Omit<TravelPlan, 'id'>), id }) }
+export function parsePlan(id: string, data: unknown): TravelPlan { return parseTravelPlan(id, data) }
 export class FirestorePlanRepository implements PlanRepository {
   private plans() { return collection(getFirebaseDb(), 'plans') }
   async getAll(): Promise<TravelPlan[]> { const snapshot = await getDocs(this.plans()); return snapshot.docs.map((doc) => parsePlan(doc.id, doc.data())) }

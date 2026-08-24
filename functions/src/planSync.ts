@@ -21,7 +21,7 @@ export interface PlanSyncProposal {
 }
 
 export type PlanSyncResult = 'UPDATED' | 'NO_CHANGE' | 'REJECTED' | 'ALREADY_PROCESSED'
-export type RejectionCode = 'INVALID_PROPOSAL' | 'PLAN_NOT_FOUND' | 'STALE_PROPOSAL' | 'OFFICIAL_DOWNGRADE' | 'IDEMPOTENCY_CONFLICT'
+export type RejectionCode = 'INVALID_PROPOSAL' | 'PLAN_NOT_FOUND' | 'UNSUPPORTED_PLAN' | 'STALE_PROPOSAL' | 'OFFICIAL_DOWNGRADE' | 'IDEMPOTENCY_CONFLICT'
 
 export interface PlanSyncResponse {
   proposalId: string
@@ -118,6 +118,7 @@ export async function processPlanSyncProposal(store: PlanSyncStore, proposal: Pl
 
     const current = await transaction.getPlan(proposal.planId)
     if (!current) return finishRejection(transaction, proposal, hash, receivedAt, options, 'PLAN_NOT_FOUND', 'El plan no existe.')
+    if (current.category === 'UNKNOWN') return finishRejection(transaction, proposal, hash, receivedAt, options, 'UNSUPPORTED_PLAN', 'El producto todavía no está aprobado por el dominio de planes.')
     const syncState = await transaction.getPlanSyncState(proposal.planId)
 
     let evaluated: ReturnType<typeof evaluateProposal>

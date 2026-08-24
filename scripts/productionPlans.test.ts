@@ -11,7 +11,7 @@ describe('dataset de producción', () => {
   })
 
   it('no exige equipamiento de camping propio', () => {
-    expect(productionPlans.every((plan) => !plan.camping.required || plan.camping.equipmentProvided)).toBe(true)
+    expect(productionPlans.every((plan) => !plan.camping?.required || plan.camping.equipmentProvided)).toBe(true)
   })
 
   it('solo marca como oficiales precios publicados por fuentes oficiales', () => {
