@@ -4,7 +4,7 @@ import { localExchangeRates } from '../data/localExchangeRates'
 import { initialTravelBudgetEstimates } from '../data/travelBudgetEstimates'
 import { productionPlans } from '../../scripts/productionPlans'
 import { createTravelBudget } from './travelBudget'
-import { getPlanCatalogEntry, getPlanTierOptions, planForTierBudget, resolvePlanTierOption, tierDeltaFromRegular } from './planCatalog'
+import { getPlanCatalogEntry, getPlanClassificationLabel, getPlanTierOptions, planForTierBudget, resolvePlanTierOption, tierDeltaFromRegular } from './planCatalog'
 
 const plan = (id: string) => productionPlans.find((item) => item.id === id)!
 
@@ -49,5 +49,31 @@ describe('catálogo oficial y modalidad considerada', () => {
     const pending = getPlanTierOptions(plan('global-journey-hotel-2p-2027'), initialTicketTiers)
     expect(tierDeltaFromRegular(pending[1], pending[0])).toBeNull()
     expect(planForTierBudget(plan('global-journey-hotel-2p-2027'), pending[1]).totalPrice).toBeNull()
+  })
+})
+
+describe('clasificación visible de planes', () => {
+  it('clasifica Full Madness individual como entrada al festival', () => {
+    expect(getPlanClassificationLabel(plan('full-madness-1p-2027'))).toBe('Entrada al festival')
+  })
+
+  it('mantiene Full Madness 2P como cálculo derivado', () => {
+    expect(getPlanClassificationLabel(plan('full-madness-2p-2027'))).toBe('Cálculo para 2 personas')
+  })
+
+  it.each(['vida-nova-2p-2027', 'easy-tent-2p-2027', 'spectacular-easy-tent-2p-2027'])('clasifica %s como entrada y alojamiento DreamVille', (id) => {
+    expect(getPlanClassificationLabel(plan(id))).toBe('DreamVille · Entrada + alojamiento')
+  })
+
+  it.each(['global-journey-hotel-1p-2027', 'global-journey-hotel-2p-2027'])('mantiene %s como Global Journey', (id) => {
+    expect(getPlanClassificationLabel(plan(id))).toBe('Global Journey')
+  })
+
+  it('no depende del nombre visible del plan', () => {
+    expect(getPlanClassificationLabel({ ...plan('easy-tent-2p-2027'), name: 'Nombre editorial distinto' })).toBe('DreamVille · Entrada + alojamiento')
+  })
+
+  it('un precio pendiente no altera la clasificación estructural', () => {
+    expect(getPlanClassificationLabel({ ...plan('easy-tent-2p-2027'), totalPrice: null, priceType: null })).toBe('DreamVille · Entrada + alojamiento')
   })
 })

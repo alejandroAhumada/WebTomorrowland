@@ -3,13 +3,14 @@ import { mkdir } from 'node:fs/promises'
 
 const artifacts = 'e2e-artifacts'
 const experiencesArtifacts = `${artifacts}/experiences-final`
+const classificationArtifacts = `${artifacts}/plan-classification-final`
 const viewports = [
   { name: '375', width: 375, height: 812 }, { name: '390', width: 390, height: 844 },
   { name: '430', width: 430, height: 932 }, { name: '768', width: 768, height: 1024 },
   { name: '1024', width: 1024, height: 768 }, { name: '1440', width: 1440, height: 900 },
 ] as const
 
-test.beforeAll(async () => { await mkdir(artifacts, { recursive: true }); await mkdir(experiencesArtifacts, { recursive: true }) })
+test.beforeAll(async () => { await mkdir(artifacts, { recursive: true }); await mkdir(experiencesArtifacts, { recursive: true }); await mkdir(classificationArtifacts, { recursive: true }) })
 test.beforeEach(async ({ page }) => { await page.goto('/'); await clearPersonalState(page) })
 
 test('smoke de Home, catálogo y rutas principales', async ({ page }) => {
@@ -20,11 +21,17 @@ test('smoke de Home, catálogo y rutas principales', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Información importante/i })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Qué opción te conviene/i })).toBeVisible()
   await page.goto('/planes/1-persona'); await expect(page.locator('article.plan-card')).toHaveCount(2)
+  await expect(card(page, 'Full Madness Pass · 1 persona')).toContainText('Entrada al festival')
+  await expect(card(page, 'Global Journey Hotel · 1 persona')).toContainText('Global Journey')
+  await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: `${classificationArtifacts}/plans-1p-390.png`, fullPage: true })
   await page.goto('/planes/2-personas'); await expect(page.locator('article.plan-card')).toHaveCount(5)
   const derived = card(page, '2 × Full Madness Pass')
   await expect(derived).toContainText('Cálculo para 2 personas')
   await expect(derived).toContainText('2 entradas individuales · no es un pack oficial 2P')
   await expect(derived).toContainText('Precio estimado')
+  for (const name of ['Vida Nova 2P', 'Easy Tent 2P', 'Spectacular Easy Tent 2P']) await expect(card(page, name)).toContainText('DreamVille · Entrada + alojamiento')
+  await expect(card(page, 'Global Journey Hotel · 2 personas')).toContainText('Global Journey')
+  await expect(page.getByText('Entrada y viaje por separado')).toHaveCount(0)
   await page.goto('/comparar'); await expect(page.getByRole('heading', { name: /Elige los planes/i })).toBeVisible()
 })
 
@@ -109,7 +116,10 @@ test('seis viewports no presentan overflow y generan capturas', async ({ page })
   await expect(page.locator('.decision-clp').nth(1)).toContainText(/≈ \$/)
   for (const viewport of viewports) {
     await page.setViewportSize(viewport); await expectNoOverflow(page)
-    if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: `${artifacts}/plans-2p-${viewport.name}.png`, fullPage: true })
+    if (viewport.name === '390' || viewport.name === '1440') {
+      await page.screenshot({ path: `${artifacts}/plans-2p-${viewport.name}.png`, fullPage: true })
+      await page.screenshot({ path: `${classificationArtifacts}/plans-2p-${viewport.name}.png`, fullPage: true })
+    }
   }
 })
 

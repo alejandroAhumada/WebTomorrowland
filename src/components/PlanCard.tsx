@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react'
 import { useTravelBudget } from '../hooks/useTravelBudget'
 import { useTicketTiers } from '../hooks/useTicketTiers'
 import type { TravelPlan } from '../models/plan'
-import { getPlanCatalogEntry, getPlanTierOptions } from '../models/planCatalog'
+import { getPlanCatalogEntry, getPlanClassificationLabel, getPlanTierOptions } from '../models/planCatalog'
 import { budgetItemTotalMoney } from '../models/travelBudget'
 import { useMyTrip } from '../state/useMyTrip'
 import { formatMoney } from '../utils/format'
@@ -27,7 +27,7 @@ export function PlanCard({ plan, selected, disabled, onToggle, onOpenDetails }: 
 
   return <article className={`plan-card decision-card ${selected ? 'selected' : ''}`} onClick={onOpenDetails}>
     <div className="card-topline"><span className="plan-type-icon"><PlanIcon aria-hidden="true" /></span><span className="card-badges"><PriceBadge type={plan.priceType} />{isMyPlan(plan.id) && <span className="my-plan-badge"><BookmarkCheck aria-hidden="true" />Mi plan</span>}</span></div>
-    <p className="category">{catalogEntry?.classification === 'DERIVED_SCENARIO' ? 'Cálculo para 2 personas' : plan.category === 'GLOBAL_JOURNEY' ? 'Global Journey' : 'Entrada y viaje por separado'}</p>
+    <p className="category">{getPlanClassificationLabel(plan)}</p>
     <h2>{plan.name}</h2>
     <p className="card-plan-summary"><TravelersIcon aria-hidden="true" />{plan.travelerCount} {plan.travelerCount === 1 ? 'persona' : 'personas'}<span aria-hidden="true">·</span><BedDouble aria-hidden="true" />{accommodationLabel}</p>
     {catalogEntry?.classification === 'DERIVED_SCENARIO' && <p className="catalog-kind"><strong>2 entradas individuales</strong> · no es un pack oficial 2P</p>}

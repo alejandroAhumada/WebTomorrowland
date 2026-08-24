@@ -41,6 +41,15 @@ const catalog: Readonly<Record<string, CatalogEntry>> = {
 
 export function getPlanCatalogEntry(planId: string): CatalogEntry | null { return catalog[planId] ?? null }
 
+export function getPlanClassificationLabel(plan: TravelPlan): string {
+  const classification = getPlanCatalogEntry(plan.id)?.classification
+  if (classification === 'DERIVED_SCENARIO') return `Cálculo para ${plan.travelerCount} ${plan.travelerCount === 1 ? 'persona' : 'personas'}`
+  if (plan.category === 'GLOBAL_JOURNEY') return 'Global Journey'
+  if (plan.dreamVilleIncluded) return 'DreamVille · Entrada + alojamiento'
+  if (classification === 'OFFICIAL_PRODUCT') return 'Entrada al festival'
+  return 'Alternativa para planificar'
+}
+
 export function getPlanTierOptions(plan: TravelPlan, tiers: readonly TicketTier[]): PlanTierOption[] {
   const entry = getPlanCatalogEntry(plan.id)
   if (!entry) return []
