@@ -100,12 +100,12 @@ describe('Mi viaje en la interfaz', () => {
     expect([journeyMarkup, easyTentMarkup, fullMadnessMarkup].every((markup) => markup.includes('Tomorrowland Brasil 2027'))).toBe(true)
   })
 
-  it('marca Mi plan en card y recomendación', () => {
+  it('marca Mi plan en PlanCard pero no mezcla esa etiqueta con recomendaciones', () => {
     const card = renderUi(<PlanCard plan={plan} selected={false} disabled={false} onToggle={() => undefined} onOpenDetails={() => undefined} />)
     const recommendation: PlanRecommendation = { plan, highlights: [{ criterion: 'LOWEST_TRIP_BUDGET', metric: { amount: 1000000, currency: 'CLP' }, explanation: 'Criterio objetivo.' }] }
-    const recommended = renderToStaticMarkup(<RecommendationCard recommendation={recommendation} isMyPlan onOpen={() => undefined} />)
+    const recommended = renderToStaticMarkup(<RecommendationCard recommendation={recommendation} onOpen={() => undefined} />)
     expect(card).toContain('Mi plan')
-    expect(recommended).toContain('Mi plan')
+    expect(recommended).not.toContain('Mi plan')
   })
 
   it('detalle permite elegir, cambiar, quitar y abrir presupuesto', () => {

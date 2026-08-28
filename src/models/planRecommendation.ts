@@ -18,8 +18,9 @@ export interface PlanRecommendation {
 
 const criterionOrder: PlanRecommendationCriterion[] = ['LOWEST_TRIP_BUDGET', 'LOWEST_TOMORROWLAND_PRICE', 'LOWEST_BUDGET_WITH_ACCOMMODATION']
 
-export function createPlanRecommendations(plans: readonly TravelPlan[], budgets: ReadonlyMap<string, TravelBudget>, travelerCount: 1 | 2): PlanRecommendation[] {
-  const eligible = plans.filter((plan) => plan.travelerCount === travelerCount)
+export function createPlanRecommendations(plans: readonly TravelPlan[], budgets: ReadonlyMap<string, TravelBudget>, travelerCount: 1 | 2, excludedPlanIds: readonly string[] = []): PlanRecommendation[] {
+  const excluded = new Set(excludedPlanIds)
+  const eligible = plans.filter((plan) => plan.travelerCount === travelerCount && !excluded.has(plan.id))
   const winners = [
     lowestTripBudget(eligible, budgets),
     lowestTomorrowlandPrice(eligible),

@@ -76,4 +76,14 @@ describe('recomendaciones objetivas de planes', () => {
     expect(result).toHaveLength(1)
     expect(result[0].highlights).toHaveLength(3)
   })
+
+  it('excluye Mi Viaje antes de buscar el siguiente candidato por criterio', () => {
+    const allBudgets = budgets(productionPlans)
+    const original = createPlanRecommendations(productionPlans, allBudgets, 2)
+    const selectedPlanId = original[0].plan.id
+    const alternatives = createPlanRecommendations(productionPlans, allBudgets, 2, [selectedPlanId])
+    expect(alternatives.length).toBeGreaterThan(0)
+    expect(alternatives.every(({ plan }) => plan.id !== selectedPlanId)).toBe(true)
+    expect(alternatives.flatMap(({ highlights }) => highlights.map(({ criterion }) => criterion))).toContain('LOWEST_TRIP_BUDGET')
+  })
 })
