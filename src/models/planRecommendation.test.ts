@@ -77,6 +77,25 @@ describe('recomendaciones objetivas de planes', () => {
     expect(result[0].highlights).toHaveLength(3)
   })
 
+  it('agrupa dos ganadores productivos en dos cards de plan', () => {
+    expect(createPlanRecommendations(productionPlans, budgets(productionPlans), 2)).toHaveLength(2)
+  })
+
+  it('admite tres planes únicos cuando cada criterio tiene un ganador distinto', () => {
+    const tripWinner = { ...structuredClone(productionPlans.find((plan) => plan.id === 'full-madness-2p-2027')!), id: 'trip-winner', totalPrice: { amount: 6000, currency: 'BRL' as const } }
+    const priceWinner = { ...structuredClone(tripWinner), id: 'price-winner', totalPrice: { amount: 2000, currency: 'BRL' as const } }
+    const accommodationWinner = { ...structuredClone(productionPlans.find((plan) => plan.id === 'easy-tent-2p-2027')!), totalPrice: { amount: 10000, currency: 'BRL' as const } }
+    const plans = [tripWinner, priceWinner, accommodationWinner]
+    const customBudgets = new Map(plans.map((plan) => {
+      const amount = plan.id === 'trip-winner' ? 1000000 : plan.id === accommodationWinner.id ? 1200000 : 1400000
+      const budget = createTravelBudget(plan, createTravelBudgetEstimates(defaultBudgetPreferences), localExchangeRates[0])
+      return [plan.id, { ...budget, total: { amount: amount * 2, currency: 'CLP' as const }, totalPerPerson: { amount, currency: 'CLP' as const } }] as const
+    }))
+    const recommendations = createPlanRecommendations(plans, customBudgets, 2)
+    expect(recommendations).toHaveLength(3)
+    expect(new Set(recommendations.map(({ plan }) => plan.id))).toEqual(new Set(['trip-winner', 'price-winner', accommodationWinner.id]))
+  })
+
   it('excluye Mi Viaje antes de buscar el siguiente candidato por criterio', () => {
     const allBudgets = budgets(productionPlans)
     const original = createPlanRecommendations(productionPlans, allBudgets, 2)
